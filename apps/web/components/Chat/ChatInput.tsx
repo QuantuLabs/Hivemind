@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send } from 'lucide-react'
+import { ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { ModelSelector } from '../ModelSelector'
-import { useSettingsStore } from '@/lib/stores/settings-store'
 import { cn } from '@/lib/utils'
 
 interface ChatInputProps {
@@ -41,70 +39,79 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   }
 
   return (
-    <div className="border-t bg-background p-4">
+    <div className="p-4 pb-6">
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-        <div className="flex items-end gap-3">
-          <div className="flex items-center gap-2">
-            {!useHivemind && <ModelSelector />}
+        {/* Main input container */}
+        <div className="relative bg-secondary/80 dark:bg-zinc-800/80 rounded-2xl border border-border/50 shadow-lg">
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={useHivemind ? 'Ask the Hivemind...' : 'Message Hivemind...'}
+            disabled={disabled}
+            className="w-full bg-transparent text-foreground placeholder-muted-foreground resize-none px-4 pt-4 pb-14 min-h-[56px] max-h-[200px] focus:outline-none text-sm"
+            rows={1}
+          />
 
-            <div className="flex items-center rounded-lg bg-muted p-1">
-              <button
-                type="button"
-                onClick={() => setUseHivemind(false)}
-                className={cn(
-                  'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
-                  !useHivemind
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Solo
-              </button>
-              <button
-                type="button"
-                onClick={() => setUseHivemind(true)}
-                className={cn(
-                  'px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1',
-                  useHivemind
-                    ? 'bg-amber-500 text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <span>🐝</span>
-                Hive
-              </button>
+          {/* Bottom bar */}
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-3">
+            {/* Left: Controls */}
+            <div className="flex items-center gap-2">
+              {!useHivemind && <ModelSelector />}
+
+              {/* Mode toggle */}
+              <div className="flex items-center rounded-full bg-muted/50 dark:bg-zinc-700/50 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setUseHivemind(false)}
+                  className={cn(
+                    'px-3 py-1 text-xs font-medium rounded-full transition-all',
+                    !useHivemind
+                      ? 'bg-background dark:bg-zinc-600 text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  Solo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUseHivemind(true)}
+                  className={cn(
+                    'px-3 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1.5',
+                    useHivemind
+                      ? 'bg-amber-500/90 text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <span>🐝</span>
+                  Hive
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="flex-1 relative">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                useHivemind
-                  ? 'Ask the Hivemind...'
-                  : 'Type your message...'
-              }
-              disabled={disabled}
-              className="min-h-[44px] max-h-[200px] pr-12 resize-none"
-              rows={1}
-            />
+            {/* Right: Send button */}
             <Button
               type="submit"
               size="icon"
               disabled={!input.trim() || disabled}
-              className="absolute right-2 bottom-2"
+              className={cn(
+                'h-8 w-8 rounded-lg transition-all',
+                input.trim() && !disabled
+                  ? 'bg-foreground hover:bg-foreground/90 text-background'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
+              )}
             >
-              <Send className="h-4 w-4" />
+              <ArrowUp className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
+        {/* Hivemind info */}
         {useHivemind && (
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            🐝 Hivemind: GPT-4o, Claude, and Gemini will deliberate to reach consensus
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            GPT-4o, Claude, and Gemini will deliberate to reach consensus
           </p>
         )}
       </form>
