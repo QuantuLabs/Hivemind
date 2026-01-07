@@ -1,0 +1,17 @@
+{
+  "name": "hivemind",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-model AI chat platform with consensus",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "bun --filter @hivemind/web dev",
+    "build": "bun --filter '*' build",
+    "test": "bun --filter '*' test",
+    "test:coverage": "bun --filter '*' test:coverage",
+    "lint": "bun --filter '*' lint",
+    "clean": "bun --filter '*' clean"
+  },
+  "keywords": ["ai", "chat", "openai", "anthropic", "gemini", "consensus"],
+  "license": "MIT"
+}
