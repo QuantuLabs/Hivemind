@@ -26,7 +26,7 @@ function getProviderForModel(model: string): Provider {
 }
 
 export function useHivemindChat() {
-  const { apiKeys, orchestratorModel } = useSettingsStore()
+  const { apiKeys, orchestratorModel, providerModels } = useSettingsStore()
   const getActiveConversation = useConversationStore((state) => state.getActiveConversation)
 
   const sendHivemindMessage = useCallback(
@@ -77,8 +77,12 @@ export function useHivemindChat() {
         progress: 10,
       })
 
+      const openaiModel = providerModels.openai
+      const anthropicModel = providerModels.anthropic
+      const googleModel = providerModels.google
+
       const [gptResponse, claudeResponse, geminiResponse] = await Promise.all([
-        openai.chat(messages, 'gpt-4o').then((content) => {
+        openai.chat(messages, openaiModel).then((content) => {
           onStatus({
             phase: 'initial',
             message: 'Querying models...',
@@ -89,9 +93,9 @@ export function useHivemindChat() {
             },
             progress: 30,
           })
-          return { model: 'gpt-4o' as const, provider: 'openai' as const, content, timestamp: Date.now() }
+          return { model: openaiModel, provider: 'openai' as const, content, timestamp: Date.now() }
         }),
-        anthropic.chat(messages, 'claude-3-5-sonnet-20241022').then((content) => {
+        anthropic.chat(messages, anthropicModel).then((content) => {
           onStatus({
             phase: 'initial',
             message: 'Querying models...',
@@ -102,9 +106,9 @@ export function useHivemindChat() {
             },
             progress: 50,
           })
-          return { model: 'claude-3-5-sonnet-20241022' as const, provider: 'anthropic' as const, content, timestamp: Date.now() }
+          return { model: anthropicModel, provider: 'anthropic' as const, content, timestamp: Date.now() }
         }),
-        google.chat(messages, 'gemini-2.0-flash-exp').then((content) => {
+        google.chat(messages, googleModel).then((content) => {
           onStatus({
             phase: 'initial',
             message: 'Querying models...',
@@ -115,7 +119,7 @@ export function useHivemindChat() {
             },
             progress: 60,
           })
-          return { model: 'gemini-2.0-flash-exp' as const, provider: 'google' as const, content, timestamp: Date.now() }
+          return { model: googleModel, provider: 'google' as const, content, timestamp: Date.now() }
         }),
       ])
 
@@ -165,16 +169,16 @@ export function useHivemindChat() {
           // Each model refines based on others' responses
           const [refinedGpt, refinedClaude, refinedGemini] = await Promise.all([
             openai.chat(
-              [{ role: 'user', content: buildRefinementPrompt(question, gptResponse.content, responses, analysis.divergences, 'gpt-4o') }],
-              'gpt-4o'
+              [{ role: 'user', content: buildRefinementPrompt(question, gptResponse.content, responses, analysis.divergences, openaiModel) }],
+              openaiModel
             ).then((content) => ({ ...gptResponse, content, timestamp: Date.now() })),
             anthropic.chat(
-              [{ role: 'user', content: buildRefinementPrompt(question, claudeResponse.content, responses, analysis.divergences, 'claude-3-5-sonnet-20241022') }],
-              'claude-3-5-sonnet-20241022'
+              [{ role: 'user', content: buildRefinementPrompt(question, claudeResponse.content, responses, analysis.divergences, anthropicModel) }],
+              anthropicModel
             ).then((content) => ({ ...claudeResponse, content, timestamp: Date.now() })),
             google.chat(
-              [{ role: 'user', content: buildRefinementPrompt(question, geminiResponse.content, responses, analysis.divergences, 'gemini-2.0-flash-exp') }],
-              'gemini-2.0-flash-exp'
+              [{ role: 'user', content: buildRefinementPrompt(question, geminiResponse.content, responses, analysis.divergences, googleModel) }],
+              googleModel
             ).then((content) => ({ ...geminiResponse, content, timestamp: Date.now() })),
           ])
 
@@ -208,7 +212,7 @@ export function useHivemindChat() {
         analysis,
       }
     },
-    [apiKeys, orchestratorModel, getActiveConversation]
+    [apiKeys, orchestratorModel, providerModels, getActiveConversation]
   )
 
   return { sendHivemindMessage }

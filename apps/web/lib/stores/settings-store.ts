@@ -1,34 +1,44 @@
 import { create } from 'zustand'
-import type { ModelId, ApiKeys } from '@hivemind/core'
+import type { ModelId, ApiKeys, Provider } from '@hivemind/core'
+import { DEFAULT_MODELS } from '@hivemind/core'
 
-type OrchestratorModel = 'claude-3-5-sonnet-20241022' | 'gpt-4o' | 'gemini-2.0-flash-exp'
+type ProviderModels = Record<Provider, ModelId>
 
 interface SettingsState {
   mode: 'solo' | 'hivemind'
-  selectedModel: ModelId
-  orchestratorModel: OrchestratorModel
+  selectedModel: ModelId // For solo mode
+  providerModels: ProviderModels // For hivemind mode
+  orchestratorModel: ModelId
   apiKeys: ApiKeys
   isStorageUnlocked: boolean
 
   // Actions
   setMode: (mode: 'solo' | 'hivemind') => void
   setSelectedModel: (model: ModelId) => void
-  setOrchestratorModel: (model: OrchestratorModel) => void
+  setProviderModel: (provider: Provider, model: ModelId) => void
+  setOrchestratorModel: (model: ModelId) => void
   setApiKeys: (keys: ApiKeys) => void
   setStorageUnlocked: (unlocked: boolean) => void
   hasRequiredKeys: () => boolean
+  getModelForProvider: (provider: Provider) => ModelId
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   mode: 'solo',
-  selectedModel: 'gpt-4o',
-  orchestratorModel: 'claude-3-5-sonnet-20241022',
+  selectedModel: 'gpt-4.1',
+  providerModels: { ...DEFAULT_MODELS },
+  orchestratorModel: 'claude-opus-4-5-20251124',
   apiKeys: {},
   isStorageUnlocked: false,
 
   setMode: (mode) => set({ mode }),
 
   setSelectedModel: (selectedModel) => set({ selectedModel }),
+
+  setProviderModel: (provider, model) =>
+    set((state) => ({
+      providerModels: { ...state.providerModels, [provider]: model },
+    })),
 
   setOrchestratorModel: (orchestratorModel) => set({ orchestratorModel }),
 
@@ -37,19 +47,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setStorageUnlocked: (isStorageUnlocked) => set({ isStorageUnlocked }),
 
   hasRequiredKeys: () => {
-    const { apiKeys, selectedModel } = get()
+    const { apiKeys } = get()
+    // Need at least one key configured
+    return !!apiKeys.openai || !!apiKeys.anthropic || !!apiKeys.google
+  },
 
-    // For solo mode, need the key for the selected model
-    if (selectedModel.startsWith('gpt')) {
-      return !!apiKeys.openai
-    }
-    if (selectedModel.startsWith('claude')) {
-      return !!apiKeys.anthropic
-    }
-    if (selectedModel.startsWith('gemini')) {
-      return !!apiKeys.google
-    }
-
-    return false
+  getModelForProvider: (provider) => {
+    const { providerModels } = get()
+    return providerModels[provider]
   },
 }))
