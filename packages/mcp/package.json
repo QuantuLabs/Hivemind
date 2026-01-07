@@ -1,0 +1,26 @@
+{
+  "name": "hivemind-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Hivemind - Multi-model AI consensus",
+  "bin": {
+    "hivemind-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs --dts",
+    "dev": "tsup src/index.ts --format cjs --dts --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["mcp", "ai", "hivemind", "consensus", "openai", "anthropic", "gemini"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@hivemind/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.5"
+  }
+}
