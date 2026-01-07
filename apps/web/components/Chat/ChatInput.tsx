@@ -13,7 +13,7 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState('')
-  const [useHivemind, setUseHivemind] = useState(false)
+  const [useHivemind, setUseHivemind] = useState(true)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -61,34 +61,20 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             <div className="flex items-center gap-2">
               {!useHivemind && <ModelSelector />}
 
-              {/* Mode toggle */}
-              <div className="flex items-center rounded-full bg-muted/50 dark:bg-zinc-700/50 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setUseHivemind(false)}
-                  className={cn(
-                    'px-3 py-1 text-xs font-medium rounded-full transition-all',
-                    !useHivemind
-                      ? 'bg-background dark:bg-zinc-600 text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  Solo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUseHivemind(true)}
-                  className={cn(
-                    'px-3 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1.5',
-                    useHivemind
-                      ? 'bg-amber-500/90 text-white shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <span>🐝</span>
-                  Hive
-                </button>
-              </div>
+              {/* Hive toggle */}
+              <button
+                type="button"
+                onClick={() => setUseHivemind(!useHivemind)}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5',
+                  useHivemind
+                    ? 'bg-amber-500 text-white shadow-sm hover:bg-amber-600'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                )}
+              >
+                <span>🐝</span>
+                Hive
+              </button>
             </div>
 
             {/* Right: Send button */}

@@ -19,12 +19,13 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-[260px] bg-muted/30 dark:bg-zinc-900/50 flex flex-col h-full border-r">
+    <aside className="w-[260px] bg-muted/30 dark:bg-zinc-900/50 flex flex-col h-full border-r border-border">
       {/* New Chat Button */}
       <div className="p-3">
         <Button
           onClick={handleNewChat}
-          className="w-full h-10 justify-between bg-secondary hover:bg-secondary/80 border-0"
+          variant="outline"
+          className="w-full h-10 justify-between"
         >
           <span className="flex items-center gap-2">
             <MessageCircle className="h-4 w-4" />
@@ -51,7 +52,7 @@ export function Sidebar() {
       </ScrollArea>
 
       {/* Bottom section */}
-      <div className="p-3 border-t">
+      <div className="p-3 border-t border-border">
         <div className="text-xs text-muted-foreground text-center">
           Powered by GPT-4o, Claude & Gemini
         </div>
