@@ -15,7 +15,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [deliberationStatus, setDeliberationStatus] = useState<DeliberationStatusType | null>(null)
 
-  const { mode, setApiKeys, setStorageUnlocked } = useSettingsStore()
+  const { setApiKeys, setStorageUnlocked } = useSettingsStore()
   const { activeConversationId, createConversation, addMessage } = useConversationStore()
 
   const { sendSoloMessage } = useSoloChat()
@@ -35,12 +35,13 @@ export default function Home() {
     loadKeys()
   }, [setApiKeys, setStorageUnlocked])
 
-  const handleSendMessage = useCallback(async (content: string) => {
+  const handleSendMessage = useCallback(async (content: string, useHivemind: boolean) => {
     let conversationId = activeConversationId
+    const messageMode = useHivemind ? 'hivemind' : 'solo'
 
     // Create new conversation if none exists
     if (!conversationId) {
-      conversationId = createConversation(mode)
+      conversationId = createConversation(messageMode)
     }
 
     // Add user message
@@ -49,8 +50,8 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      if (mode === 'solo') {
-        const response = await sendSoloMessage(content, (token) => {
+      if (!useHivemind) {
+        const response = await sendSoloMessage(content, () => {
           // Handle streaming tokens if needed
         })
 
@@ -79,7 +80,7 @@ export default function Home() {
       setIsLoading(false)
       setDeliberationStatus(null)
     }
-  }, [activeConversationId, mode, createConversation, addMessage, sendSoloMessage, sendHivemindMessage])
+  }, [activeConversationId, createConversation, addMessage, sendSoloMessage, sendHivemindMessage])
 
   return (
     <div className="flex flex-col h-screen">

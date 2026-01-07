@@ -11,14 +11,22 @@ import {
   type ModelResponse,
   type HivemindResult,
   type ConsensusAnalysis,
+  type Provider,
 } from '@hivemind/core'
 import { useSettingsStore } from '../stores/settings-store'
 import { useConversationStore } from '../stores/conversation-store'
 
 const MAX_ROUNDS = 3
 
+function getProviderForModel(model: string): Provider {
+  if (model.startsWith('gpt')) return 'openai'
+  if (model.startsWith('claude')) return 'anthropic'
+  if (model.startsWith('gemini')) return 'google'
+  return 'anthropic'
+}
+
 export function useHivemindChat() {
-  const { apiKeys } = useSettingsStore()
+  const { apiKeys, orchestratorModel } = useSettingsStore()
   const getActiveConversation = useConversationStore((state) => state.getActiveConversation)
 
   const sendHivemindMessage = useCallback(
@@ -41,6 +49,12 @@ export function useHivemindChat() {
       const openai = new OpenAIProvider({ apiKey: apiKeys.openai })
       const anthropic = new AnthropicProvider({ apiKey: apiKeys.anthropic })
       const google = new GoogleProvider({ apiKey: apiKeys.google })
+
+      // Get orchestrator provider
+      const orchestratorProvider = getProviderForModel(orchestratorModel)
+      const orchestrator =
+        orchestratorProvider === 'openai' ? openai :
+        orchestratorProvider === 'google' ? google : anthropic
 
       let round = 0
       let responses: ModelResponse[] = []
@@ -121,9 +135,9 @@ export function useHivemindChat() {
         })
 
         const analysisPrompt = buildAnalysisPrompt(question, responses)
-        const analysisResponse = await anthropic.chat(
+        const analysisResponse = await orchestrator.chat(
           [{ role: 'user', content: analysisPrompt }],
-          'claude-3-5-sonnet-20241022'
+          orchestratorModel
         )
 
         analysis = parseAnalysis(analysisResponse)
@@ -176,9 +190,9 @@ export function useHivemindChat() {
       })
 
       const synthesisPrompt = buildSynthesisPrompt(question, responses, analysis, round)
-      const consensus = await anthropic.chat(
+      const consensus = await orchestrator.chat(
         [{ role: 'user', content: synthesisPrompt }],
-        'claude-3-5-sonnet-20241022'
+        orchestratorModel
       )
 
       onStatus({
@@ -194,7 +208,7 @@ export function useHivemindChat() {
         analysis,
       }
     },
-    [apiKeys, getActiveConversation]
+    [apiKeys, orchestratorModel, getActiveConversation]
   )
 
   return { sendHivemindMessage }

@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { HivemindToggle } from './HivemindToggle'
 import { ThemeToggle } from './ThemeToggle'
 
 export function Header() {
@@ -15,17 +14,13 @@ export function Header() {
           <span className="font-bold text-lg tracking-tight">Hivemind</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <HivemindToggle />
-
-          <div className="flex items-center gap-1 ml-2">
-            <ThemeToggle />
-            <Link href="/settings">
-              <Button variant="ghost" size="icon">
-                <Settings className="h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <Link href="/settings">
+            <Button variant="ghost" size="icon">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

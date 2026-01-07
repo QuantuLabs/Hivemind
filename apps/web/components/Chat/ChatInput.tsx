@@ -6,16 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ModelSelector } from '../ModelSelector'
 import { useSettingsStore } from '@/lib/stores/settings-store'
+import { cn } from '@/lib/utils'
 
 interface ChatInputProps {
-  onSend: (message: string) => void
+  onSend: (message: string, useHivemind: boolean) => void
   disabled?: boolean
 }
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState('')
+  const [useHivemind, setUseHivemind] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { mode } = useSettingsStore()
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -28,7 +29,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     e.preventDefault()
     if (!input.trim() || disabled) return
 
-    onSend(input.trim())
+    onSend(input.trim(), useHivemind)
     setInput('')
   }
 
@@ -43,7 +44,37 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     <div className="border-t bg-background p-4">
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
         <div className="flex items-end gap-3">
-          {mode === 'solo' && <ModelSelector />}
+          <div className="flex items-center gap-2">
+            {!useHivemind && <ModelSelector />}
+
+            <div className="flex items-center rounded-lg bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => setUseHivemind(false)}
+                className={cn(
+                  'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
+                  !useHivemind
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Solo
+              </button>
+              <button
+                type="button"
+                onClick={() => setUseHivemind(true)}
+                className={cn(
+                  'px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1',
+                  useHivemind
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <span>🐝</span>
+                Hive
+              </button>
+            </div>
+          </div>
 
           <div className="flex-1 relative">
             <Textarea
@@ -52,7 +83,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={
-                mode === 'hivemind'
+                useHivemind
                   ? 'Ask the Hivemind...'
                   : 'Type your message...'
               }
@@ -71,9 +102,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           </div>
         </div>
 
-        {mode === 'hivemind' && (
+        {useHivemind && (
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            🐝 Hivemind mode: GPT-4o, Claude, and Gemini will deliberate to reach consensus
+            🐝 Hivemind: GPT-4o, Claude, and Gemini will deliberate to reach consensus
           </p>
         )}
       </form>

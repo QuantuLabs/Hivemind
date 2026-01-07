@@ -1,15 +1,19 @@
 import { create } from 'zustand'
 import type { ModelId, ApiKeys } from '@hivemind/core'
 
+type OrchestratorModel = 'claude-3-5-sonnet-20241022' | 'gpt-4o' | 'gemini-2.0-flash-exp'
+
 interface SettingsState {
   mode: 'solo' | 'hivemind'
   selectedModel: ModelId
+  orchestratorModel: OrchestratorModel
   apiKeys: ApiKeys
   isStorageUnlocked: boolean
 
   // Actions
   setMode: (mode: 'solo' | 'hivemind') => void
   setSelectedModel: (model: ModelId) => void
+  setOrchestratorModel: (model: OrchestratorModel) => void
   setApiKeys: (keys: ApiKeys) => void
   setStorageUnlocked: (unlocked: boolean) => void
   hasRequiredKeys: () => boolean
@@ -18,6 +22,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   mode: 'solo',
   selectedModel: 'gpt-4o',
+  orchestratorModel: 'claude-3-5-sonnet-20241022',
   apiKeys: {},
   isStorageUnlocked: false,
 
@@ -25,17 +30,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setSelectedModel: (selectedModel) => set({ selectedModel }),
 
+  setOrchestratorModel: (orchestratorModel) => set({ orchestratorModel }),
+
   setApiKeys: (apiKeys) => set({ apiKeys }),
 
   setStorageUnlocked: (isStorageUnlocked) => set({ isStorageUnlocked }),
 
   hasRequiredKeys: () => {
-    const { mode, apiKeys, selectedModel } = get()
-
-    if (mode === 'hivemind') {
-      // Need all three keys for hivemind
-      return !!(apiKeys.openai && apiKeys.anthropic && apiKeys.google)
-    }
+    const { apiKeys, selectedModel } = get()
 
     // For solo mode, need the key for the selected model
     if (selectedModel.startsWith('gpt')) {

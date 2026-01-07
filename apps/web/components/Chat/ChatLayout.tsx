@@ -8,7 +8,7 @@ import { DeliberationStatus } from './DeliberationStatus'
 import type { DeliberationStatus as DeliberationStatusType } from '@hivemind/core'
 
 interface ChatLayoutProps {
-  onSendMessage: (message: string) => void
+  onSendMessage: (message: string, useHivemind: boolean) => void
   isLoading: boolean
   deliberationStatus: DeliberationStatusType | null
 }
