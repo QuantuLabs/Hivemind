@@ -14,9 +14,24 @@ Query multiple AI models and orchestrate consensus through deliberation.
 
 For questions about the codebase:
 
-1. **Launch Explore agents** to investigate the codebase/problem
-2. **Read relevant files** - get actual source code
-3. **Collect raw outputs** - DO NOT summarize, keep raw data
+**CRITICAL: You must pass RAW, UNDIGESTED code to the hivemind.**
+
+1. **Use Glob** to find relevant files by pattern
+2. **Use Read** to get COMPLETE file contents - not excerpts
+3. **DO NOT use Explore agents** - they return analyzed summaries, not raw code
+4. **DO NOT pre-analyze** - keep your interpretation for AFTER hivemind results
+
+**Example workflow:**
+```
+# Find files
+Glob("src/**/*.ts")
+
+# Read complete contents
+Read("/path/to/file1.ts")
+Read("/path/to/file2.ts")
+
+# Pass raw code to hivemind (next phase)
+```
 
 For general questions, skip to Phase 2.
 
@@ -33,9 +48,23 @@ Before calling the hivemind tool, think through the question and formulate your 
 ```
 hivemind({
   question: "The question here",
-  context: "Raw context if any (exploration outputs, file contents, etc.)"
+  context: `
+## Source Files (RAW - DO NOT SUMMARIZE)
+
+### /path/to/file1.ts
+\`\`\`typescript
+[PASTE COMPLETE FILE CONTENT FROM READ TOOL]
+\`\`\`
+
+### /path/to/file2.ts
+\`\`\`typescript
+[PASTE COMPLETE FILE CONTENT FROM READ TOOL]
+\`\`\`
+`
 })
 ```
+
+**IMPORTANT:** The context must contain actual source code, not your analysis of it.
 
 This returns raw responses from GPT-5.2 and Gemini 3 Pro.
 
@@ -124,6 +153,7 @@ Once consensus is reached (or max rounds hit):
 3. **Raw context** - Don't pre-digest information, let models form independent opinions
 4. **Iterate until consensus** - Don't settle for the first round if there's disagreement
 5. **Synthesize, don't pick** - The final answer should combine the best of all perspectives
+6. **No Explore agents for context** - Explore agents analyze and summarize. Use Read/Glob directly for raw code.
 
 ---
 
@@ -139,7 +169,7 @@ Once consensus is reached (or max rounds hit):
 ```
 /hive Review my authentication implementation for security issues
 ```
-→ Explore codebase → Read auth files → Formulate your answer → Query hivemind with context → Iterate if needed → Synthesize
+→ Glob to find auth files → Read complete file contents → Formulate your answer → Query hivemind with raw code → Iterate if needed → Synthesize
 
 ### Follow-up example
 ```
