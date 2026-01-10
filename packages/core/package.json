@@ -1,6 +1,20 @@
 {
-  "name": "@hivemind/core",
+  "name": "@quantulabs/hivemind-core",
   "version": "0.1.0",
+  "description": "Core providers and consensus logic for Hivemind multi-model AI",
+  "license": "MIT",
+  "author": "QuantuLabs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/QuantuLabs/Hivemind.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/QuantuLabs/Hivemind#readme",
+  "keywords": ["ai", "llm", "openai", "anthropic", "gemini", "consensus"],
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

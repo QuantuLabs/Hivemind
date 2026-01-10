@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { DeliberationStatus as DeliberationStatusType } from '@hivemind/core'
+import type { DeliberationStatus as DeliberationStatusType } from '@quantulabs/hivemind-core'
 import { Header } from '@/components/Header'
 import { Sidebar } from '@/components/Sidebar/Sidebar'
 import { ChatLayout } from '@/components/Chat/ChatLayout'

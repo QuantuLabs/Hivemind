@@ -2,7 +2,7 @@ import {
   OpenAIProvider,
   GoogleProvider,
   type ModelResponse,
-} from '@hivemind/core'
+} from '@quantulabs/hivemind-core'
 import { getConfig, hasRequiredKeys, getSettings, type Provider } from '../config'
 import { trackUsage } from '../usage'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import type { DeliberationStatus as DeliberationStatusType } from '@hivemind/core'
+import type { DeliberationStatus as DeliberationStatusType } from '@quantulabs/hivemind-core'
 import { Loader2, Check, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'

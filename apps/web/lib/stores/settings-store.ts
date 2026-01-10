@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { ModelId, ApiKeys, Provider } from '@hivemind/core'
-import { DEFAULT_MODELS } from '@hivemind/core'
+import type { ModelId, ApiKeys, Provider } from '@quantulabs/hivemind-core'
+import { DEFAULT_MODELS } from '@quantulabs/hivemind-core'
 
 type ProviderModels = Record<Provider, ModelId>
 

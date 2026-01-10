@@ -12,7 +12,7 @@ import {
   type HivemindResult,
   type ConsensusAnalysis,
   type Provider,
-} from '@hivemind/core'
+} from '@quantulabs/hivemind-core'
 import { useSettingsStore } from '../stores/settings-store'
 import { useConversationStore } from '../stores/conversation-store'
 import { withRetry } from '../utils'

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Conversation, Message } from '@hivemind/core'
+import type { Conversation, Message } from '@quantulabs/hivemind-core'
 import { storage } from '../storage'
 
 function generateId(): string {

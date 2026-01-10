@@ -1,5 +1,5 @@
 import { encrypt, decrypt, hashPassword, verifyPasswordHash } from './crypto'
-import type { ApiKeys, Conversation } from '@hivemind/core'
+import type { ApiKeys, Conversation } from '@quantulabs/hivemind-core'
 
 const KEYS_STORAGE_KEY = 'hivemind_api_keys'
 const PASSWORD_HASH_KEY = 'hivemind_password_hash'

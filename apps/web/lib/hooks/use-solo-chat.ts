@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { OpenAIProvider, AnthropicProvider, GoogleProvider } from '@hivemind/core'
+import { OpenAIProvider, AnthropicProvider, GoogleProvider } from '@quantulabs/hivemind-core'
 import { useSettingsStore } from '../stores/settings-store'
 import { useConversationStore } from '../stores/conversation-store'
 import { withRetry } from '../utils'

@@ -1,5 +1,5 @@
-import { OpenAIProvider, AnthropicProvider, GoogleProvider } from '@hivemind/core'
-import type { Provider } from '@hivemind/core'
+import { OpenAIProvider, AnthropicProvider, GoogleProvider } from '@quantulabs/hivemind-core'
+import type { Provider } from '@quantulabs/hivemind-core'
 
 export async function validateApiKey(
   provider: Provider,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { Provider, ApiKeys } from '@hivemind/core'
+import type { Provider, ApiKeys } from '@quantulabs/hivemind-core'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { KeyStatusIndicator } from './KeyStatusIndicator'

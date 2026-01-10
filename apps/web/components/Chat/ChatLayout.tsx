@@ -5,7 +5,7 @@ import { useSettingsStore } from '@/lib/stores/settings-store'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 import { DeliberationStatus } from './DeliberationStatus'
-import type { DeliberationStatus as DeliberationStatusType } from '@hivemind/core'
+import type { DeliberationStatus as DeliberationStatusType } from '@quantulabs/hivemind-core'
 
 interface ChatLayoutProps {
   onSendMessage: (message: string, useHivemind: boolean) => void

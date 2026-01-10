@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import '../setup'
-import type { Conversation } from '@hivemind/core'
+import type { Conversation } from '@quantulabs/hivemind-core'
 
 // We need to import storage dynamically after setup runs
 let storage: typeof import('../../lib/storage').storage

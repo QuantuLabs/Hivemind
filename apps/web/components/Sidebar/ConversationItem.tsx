@@ -1,6 +1,6 @@
 'use client'
 
-import type { Conversation } from '@hivemind/core'
+import type { Conversation } from '@quantulabs/hivemind-core'
 import { MessageSquare, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

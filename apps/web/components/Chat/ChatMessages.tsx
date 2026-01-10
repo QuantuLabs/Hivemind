@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { Message as MessageType } from '@hivemind/core'
+import type { Message as MessageType } from '@quantulabs/hivemind-core'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Message } from './Message'
 import { Sparkles, Zap, Brain } from 'lucide-react'

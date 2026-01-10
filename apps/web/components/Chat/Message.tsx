@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { Message as MessageType } from '@hivemind/core'
+import type { Message as MessageType } from '@quantulabs/hivemind-core'
 import { User, Copy, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MarkdownRenderer } from './MarkdownRenderer'

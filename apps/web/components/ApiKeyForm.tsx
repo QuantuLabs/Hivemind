@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { Provider } from '@hivemind/core'
+import type { Provider } from '@quantulabs/hivemind-core'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

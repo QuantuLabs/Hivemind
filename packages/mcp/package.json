@@ -1,7 +1,20 @@
 {
-  "name": "hivemind-mcp",
+  "name": "@quantulabs/hivemind-mcp",
   "version": "0.1.0",
-  "description": "MCP server for Hivemind - Multi-model AI consensus",
+  "description": "MCP server for Hivemind - Multi-model AI consensus for Claude Code",
+  "license": "MIT",
+  "author": "QuantuLabs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/QuantuLabs/Hivemind.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/QuantuLabs/Hivemind#readme",
+  "keywords": ["mcp", "ai", "hivemind", "consensus", "openai", "anthropic", "gemini", "claude-code"],
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "hivemind-mcp": "./dist/index.js"
   },
@@ -12,11 +25,9 @@
     "dev": "tsup src/index.ts --format cjs --dts --watch",
     "start": "node dist/index.js"
   },
-  "keywords": ["mcp", "ai", "hivemind", "consensus", "openai", "anthropic", "gemini"],
-  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@hivemind/core": "workspace:*"
+    "@quantulabs/hivemind-core": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",

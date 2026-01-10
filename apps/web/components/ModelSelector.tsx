@@ -1,6 +1,6 @@
 'use client'
 
-import { MODELS, type ModelId } from '@hivemind/core'
+import { MODELS, type ModelId } from '@quantulabs/hivemind-core'
 import {
   Select,
   SelectContent,

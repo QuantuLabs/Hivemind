@@ -18,7 +18,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './'),
-      '@hivemind/core': path.resolve(__dirname, '../../packages/core/src'),
+      '@quantulabs/hivemind-core': path.resolve(__dirname, '../../packages/core/src'),
     },
   },
 })

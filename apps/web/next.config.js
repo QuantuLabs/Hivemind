@@ -38,7 +38,7 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@hivemind/core'],
+  transpilePackages: ['@quantulabs/hivemind-core'],
 
   async headers() {
     return [

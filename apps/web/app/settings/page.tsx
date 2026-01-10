@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ApiKeySettings } from '@/components/ApiKeySettings'
 import { useSettingsStore } from '@/lib/stores/settings-store'
-import { MODELS, type Provider, type ModelId } from '@hivemind/core'
+import { MODELS, type Provider, type ModelId } from '@quantulabs/hivemind-core'
 import {
   Select,
   SelectContent,

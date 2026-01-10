@@ -5,7 +5,7 @@
   "description": "Multi-model AI chat platform with consensus",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "bun --filter @hivemind/web dev",
+    "dev": "bun --filter @quantulabs/hivemind-web dev",
     "build": "bun --filter '*' build",
     "test": "bun --filter '*' test",
     "test:coverage": "bun --filter '*' test:coverage",
