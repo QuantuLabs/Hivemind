@@ -14,24 +14,33 @@ Query multiple AI models and orchestrate consensus through deliberation.
 
 For questions about the codebase:
 
-**CRITICAL: You must pass RAW, UNDIGESTED code to the hivemind.**
+**CRITICAL: Pass RAW, UNDIGESTED code - but be SMART about what you include.**
 
 1. **Use Glob** to find relevant files by pattern
-2. **Use Read** to get COMPLETE file contents - not excerpts
-3. **DO NOT use Explore agents** - they return analyzed summaries, not raw code
-4. **DO NOT pre-analyze** - keep your interpretation for AFTER hivemind results
+2. **Use Read** to get file contents
+3. **Be selective** - include the relevant portions, not necessarily entire files
+4. **DO NOT use Explore agents** - they return analyzed summaries, not raw code
+5. **DO NOT pre-analyze** - keep your interpretation for AFTER hivemind results
+
+**Smart context selection:**
+- For audits: Include the actual implementation code, not your analysis
+- For bugs: Include the buggy function + related code, line numbers
+- For architecture: Include key files/interfaces, skip boilerplate
+- Large files: Use Read with offset/limit to get relevant sections
 
 **Example workflow:**
 ```
 # Find files
-Glob("src/**/*.ts")
+Glob("src/auth/**/*.ts")
 
-# Read complete contents
-Read("/path/to/file1.ts")
-Read("/path/to/file2.ts")
+# Read targeted sections (smart selection)
+Read("/path/to/auth.ts", offset=50, limit=100)  # Just the relevant function
+Read("/path/to/types.ts")  # Full file if small and relevant
 
 # Pass raw code to hivemind (next phase)
 ```
+
+**Key:** Raw ≠ Everything. Raw = actual code, not your summary of it.
 
 For general questions, skip to Phase 2.
 
@@ -49,22 +58,25 @@ Before calling the hivemind tool, think through the question and formulate your 
 hivemind({
   question: "The question here",
   context: `
-## Source Files (RAW - DO NOT SUMMARIZE)
+## Source Code (RAW - not summaries)
 
-### /path/to/file1.ts
+### /path/to/auth.ts (lines 50-150)
 \`\`\`typescript
-[PASTE COMPLETE FILE CONTENT FROM READ TOOL]
+[PASTE THE RELEVANT CODE SECTION - actual code, not your description]
 \`\`\`
 
-### /path/to/file2.ts
+### /path/to/types.ts
 \`\`\`typescript
-[PASTE COMPLETE FILE CONTENT FROM READ TOOL]
+[PASTE ACTUAL CODE - be selective if file is large]
 \`\`\`
 `
 })
 ```
 
-**IMPORTANT:** The context must contain actual source code, not your analysis of it.
+**IMPORTANT:**
+- Include actual source code, not your analysis
+- Be selective: relevant sections > entire codebase
+- Include line numbers for context
 
 This returns raw responses from GPT-5.2 and Gemini 3 Pro.
 
