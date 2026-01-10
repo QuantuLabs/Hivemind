@@ -99,14 +99,39 @@ bun lint
 Hivemind includes an MCP server for Claude Code integration:
 
 ```bash
-cd packages/mcp
-bun start
+# Add to Claude Code
+claude mcp add hivemind -- node /path/to/hivemind/packages/mcp/dist/index.js
 ```
 
-Available tools:
-- `hivemind` - Query all models and get consensus
-- `configure_keys` - Set API keys
-- `check_status` - Check configuration status
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `hivemind` | Query GPT-5.2 & Gemini 3 Pro, get raw responses for Claude to orchestrate |
+| `configure_keys` | Set API keys (stored securely) |
+| `check_status` | Check configuration and active providers |
+| `configure_hive` | Toggle grounding search and Claude Code mode |
+| `check_stats` | View token usage and cost statistics |
+
+### Claude Code Commands
+
+- `/hive <question>` - Orchestrate multi-model consensus with Claude as the synthesizer
+- `/hive-config` - Configure API keys and settings
+- `/hivestats` - View usage statistics
+
+### Automatic Hivemind Fallback
+
+Copy `CLAUDE.md.example` to your project's `.claude/CLAUDE.md` to enable automatic Hivemind consultation when Claude is stuck (after 3+ failed attempts).
+
+## Prompt Caching
+
+All providers use optimized caching for cost reduction on follow-up queries:
+
+| Provider | Type | Savings | Min Tokens |
+|----------|------|---------|------------|
+| OpenAI | Automatic | 50% | 1024 |
+| Gemini 2.5+ | Implicit | 90% | - |
+| Anthropic | Explicit | 90% | 1024 |
 
 ## Security
 

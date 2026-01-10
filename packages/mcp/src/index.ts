@@ -8,6 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { hivemindTool, type HivemindToolParams } from './tools/hivemind'
 import { getConfig, setApiKey, hasRequiredKeys, updateSettings, getSettings, initializeCache, isRunningInClaudeCode, getAvailableProviders, getAllKeySources, getEnvFilePath } from './config'
+import { getUsageStats, resetSessionStats, formatDuration, formatCost, formatTokens, TOKEN_PRICING } from './usage'
 
 const server = new Server(
   {
@@ -28,7 +29,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'hivemind',
         description:
-          'Query multiple AI models (GPT-5.2, Claude Opus 4.5, Gemini 3 Pro) and get a synthesized consensus answer. The models deliberate through multiple rounds if they disagree. Pass context (code, files, etc.) to give all models the same information.',
+          'Query GPT-5.2 and Gemini 3 Pro in parallel and get their raw responses. Claude Code acts as the orchestrator - use this tool to gather other model perspectives, then analyze and synthesize the consensus yourself.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -40,10 +41,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'string',
               description: 'Additional context to include (code snippets, file contents, documentation, etc.). This context will be sent to all models.',
             },
-            consensusOnly: {
-              type: 'boolean',
-              description: 'If true, only return the consensus without individual model responses',
-              default: false,
+            previousResponses: {
+              type: 'array',
+              description: 'For follow-up queries: include previous model responses so they can reconsider. Each item should have provider and content.',
+              items: {
+                type: 'object',
+                properties: {
+                  provider: { type: 'string', description: 'Provider name (openai, google, claude)' },
+                  content: { type: 'string', description: 'The previous response content' },
+                },
+                required: ['provider', 'content'],
+              },
             },
           },
           required: ['question'],
@@ -91,6 +99,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             claudeCodeMode: {
               type: 'boolean',
               description: 'Skip Anthropic API calls when running inside Claude Code (default: true). When enabled, only OpenAI and Google are queried since Claude is already the host.',
+            },
+          },
+        },
+      },
+      {
+        name: 'check_stats',
+        description: 'Get token usage statistics and costs for Hivemind API calls',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            resetSession: {
+              type: 'boolean',
+              description: 'Reset session statistics after retrieving them',
+              default: false,
             },
           },
         },
@@ -211,6 +233,72 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: 'text',
             text: `Hivemind settings updated:\n${JSON.stringify(updated, null, 2)}`,
+          },
+        ],
+      }
+    }
+
+    case 'check_stats': {
+      const { resetSession = false } = args as { resetSession?: boolean }
+      const stats = getUsageStats()
+
+      // Build formatted output
+      const lines: string[] = []
+
+      lines.push('## Session Statistics')
+      lines.push(`Duration: ${formatDuration(stats.session.duration)}`)
+      lines.push(`Total Requests: ${stats.session.totalRequests}`)
+      lines.push(`Total Tokens: ${formatTokens(stats.session.totalTokens)}`)
+      lines.push(`Total Cost: ${formatCost(stats.session.totalCost)}`)
+      lines.push('')
+
+      for (const provider of ['openai', 'anthropic', 'google'] as const) {
+        const usage = stats.session.providers[provider]
+        if (usage.requests > 0) {
+          lines.push(`### ${provider.charAt(0).toUpperCase() + provider.slice(1)}`)
+          lines.push(`  Requests: ${usage.requests}`)
+          lines.push(`  Input: ${formatTokens(usage.inputTokens)} tokens`)
+          lines.push(`  Output: ${formatTokens(usage.outputTokens)} tokens`)
+          lines.push(`  Cost: ${formatCost(usage.cost)}`)
+        }
+      }
+
+      lines.push('')
+      lines.push('## Monthly Statistics')
+      lines.push(`Month: ${stats.monthly.month}`)
+      lines.push(`Total Requests: ${stats.monthly.totalRequests}`)
+      lines.push(`Total Tokens: ${formatTokens(stats.monthly.totalTokens)}`)
+      lines.push(`Total Cost: ${formatCost(stats.monthly.totalCost)}`)
+      lines.push('')
+
+      for (const provider of ['openai', 'anthropic', 'google'] as const) {
+        const usage = stats.monthly.providers[provider]
+        if (usage.requests > 0) {
+          lines.push(`### ${provider.charAt(0).toUpperCase() + provider.slice(1)}`)
+          lines.push(`  Requests: ${usage.requests}`)
+          lines.push(`  Input: ${formatTokens(usage.inputTokens)} tokens`)
+          lines.push(`  Output: ${formatTokens(usage.outputTokens)} tokens`)
+          lines.push(`  Cost: ${formatCost(usage.cost)}`)
+        }
+      }
+
+      lines.push('')
+      lines.push('## Pricing (per 1M tokens)')
+      for (const [provider, pricing] of Object.entries(TOKEN_PRICING)) {
+        lines.push(`${provider}: $${pricing.input} input / $${pricing.output} output`)
+      }
+
+      if (resetSession) {
+        resetSessionStats()
+        lines.push('')
+        lines.push('*Session statistics have been reset.*')
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: lines.join('\n'),
           },
         ],
       }

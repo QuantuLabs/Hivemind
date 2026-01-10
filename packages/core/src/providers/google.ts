@@ -18,6 +18,14 @@ export class GoogleProvider extends BaseProvider {
     model: ModelId,
     callbacks?: StreamCallbacks
   ): Promise<string> {
+    // Google Gemini Implicit Caching (automatic since May 2025):
+    // - Enabled by default for Gemini 2.5+ models (no code changes needed)
+    // - 90% cost reduction on cached tokens for Gemini 2.5+
+    // - 75% cost reduction for Gemini 2.0 models
+    // - Check `cached_content_token_count` in response metadata for cache hits
+    // - For explicit caching control, use the cachedContents API separately
+    // See: https://ai.google.dev/gemini-api/docs/caching
+    // See: https://developers.googleblog.com/en/gemini-2-5-models-now-support-implicit-caching/
     const contents = messages.map((msg) => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }],

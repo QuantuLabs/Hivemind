@@ -1,93 +1,166 @@
-# /hive - Ask the Hivemind
+# /hive - Hivemind Deliberation
 
-Query multiple AI models and get a synthesized consensus answer.
+Query multiple AI models and orchestrate consensus through deliberation.
 
-## Usage
+**You (Claude Code) are the orchestrator.** GPT and Gemini provide their perspectives, and you analyze, investigate, and synthesize the final consensus.
 
-When the user invokes `/hive`, follow this workflow:
+## Arguments
 
-### Phase 1: Gather Raw Context
+- `$ARGUMENTS` - The question to ask the Hivemind
 
-1. **Launch Explore agents** - Use Task agents with `subagent_type=Explore` to thoroughly investigate the codebase/problem. Launch multiple agents in parallel if needed for different aspects.
+---
 
-2. **Read relevant files** - Use Read tool to get the actual source code of critical files identified by exploration.
+## Phase 1: Context Building (if needed)
 
-3. **Collect raw outputs** - Save the COMPLETE outputs from explore agents and file reads. Do NOT summarize yet.
+For questions about the codebase:
 
-### Phase 2: Pass RAW Context to Hivemind
+1. **Launch Explore agents** to investigate the codebase/problem
+2. **Read relevant files** - get actual source code
+3. **Collect raw outputs** - DO NOT summarize, keep raw data
 
-**CRITICAL: Pass raw context, not your interpretation.**
+For general questions, skip to Phase 2.
+
+---
+
+## Phase 2: Initial Query
+
+### Step 1: Formulate YOUR answer first
+
+Before calling the hivemind tool, think through the question and formulate your own complete answer. Be thorough - this is your contribution to the deliberation.
+
+### Step 2: Query other models
 
 ```
 hivemind({
-  question: "The user's question here",
-  context: `
-## RAW EXPLORATION RESULTS
-
-### Agent 1 Output (Identity Module):
-[PASTE COMPLETE OUTPUT FROM EXPLORE AGENT - DO NOT SUMMARIZE]
-
-### Agent 2 Output (Other Module):
-[PASTE COMPLETE OUTPUT - DO NOT SUMMARIZE]
-
-### Critical Source Files:
-[PASTE ACTUAL FILE CONTENTS OR LARGE EXCERPTS]
-`,
-  consensusOnly: false
+  question: "The question here",
+  context: "Raw context if any (exploration outputs, file contents, etc.)"
 })
 ```
 
-## Key Principle
+This returns raw responses from GPT-5.2 and Gemini 3 Pro.
 
-**Raw context, independent analysis.** The goal is for GPT, Claude, and Gemini to form their OWN opinions from the raw data - not to validate YOUR pre-digested interpretation.
+### Step 3: You now have 3 perspectives
 
-### DO NOT:
-- Summarize exploration results before passing to hivemind
-- Cherry-pick only certain findings
-- Rewrite or "clean up" the context
-- Add your own conclusions to the context
+- **Your answer** (Claude Code - formulated in Step 1)
+- **GPT-5.2** (from hivemind response)
+- **Gemini 3 Pro** (from hivemind response)
 
-### DO:
-- Pass complete agent outputs verbatim
-- Include full source code of relevant files
-- Let the context be "messy" - that's fine
-- Keep your interpretation for AFTER you receive hivemind results
+---
 
-## Why This Matters
+## Phase 3: Analysis Loop (max 10 rounds)
 
-If you pre-digest the context, you're essentially asking the hivemind to validate YOUR analysis. The models will anchor on your framing and miss things you missed. Raw context = truly independent perspectives = better consensus.
+### Analyze all responses
+
+Compare the 3 perspectives and identify:
+- **Agreements** - Points where all models concur
+- **Divergences** - Areas of disagreement
+- **Gaps** - Things one model mentioned that others missed
+- **Questions** - Topics that need more investigation
+
+### If consensus reached
+
+All models agree on the key points → Go to Phase 4
+
+### If divergence found
+
+1. **Can you resolve it?** Use your tools:
+   - `Read` - Check specific files
+   - `Grep` - Search for patterns
+   - `WebSearch` - Get current information
+   - `Task` with `Explore` - Deeper investigation
+
+2. **Gather additional information** to resolve the divergence
+
+3. **Send follow-up to models:**
+   ```
+   hivemind({
+     question: "Follow-up question addressing the divergence",
+     context: "Original context + new findings",
+     previousResponses: [
+       { provider: "claude", content: "Your previous answer" },
+       { provider: "openai", content: "GPT's previous answer" },
+       { provider: "google", content: "Gemini's previous answer" }
+     ]
+   })
+   ```
+
+4. **Return to analysis** with the new responses
+
+---
+
+## Phase 4: Synthesis
+
+Once consensus is reached (or max rounds hit):
+
+1. **Synthesize the final answer** combining the best insights from all models
+2. **Include confidence level** (high/medium/low)
+3. **Note any remaining disagreements** if applicable
+
+### Output format
+
+```markdown
+## Hivemind Consensus
+
+[Your synthesized answer here]
+
+### Confidence: [High/Medium/Low]
+
+### Model Agreement
+- GPT-5.2: [Agrees/Partially agrees/Disagrees]
+- Gemini 3 Pro: [Agrees/Partially agrees/Disagrees]
+
+### Key Insights
+- [Insight from your analysis]
+- [Insight from GPT that was valuable]
+- [Insight from Gemini that was valuable]
+```
+
+---
+
+## Key Principles
+
+1. **You are the orchestrator** - Not just a participant, but the one driving the deliberation
+2. **Use your tools** - You can investigate during deliberation, other models cannot
+3. **Raw context** - Don't pre-digest information, let models form independent opinions
+4. **Iterate until consensus** - Don't settle for the first round if there's disagreement
+5. **Synthesize, don't pick** - The final answer should combine the best of all perspectives
+
+---
 
 ## Examples
 
-- `/hive Audit my auth code` → Launch Explore agents, pass their FULL outputs + actual source files to hivemind
-- `/hive Best caching strategy?` → Explore architecture, pass raw findings + relevant code to hivemind
-- `/hive REST vs GraphQL?` → General question with no codebase context, can call hivemind directly
+### Simple question (no codebase)
+```
+/hive What's the best approach for implementing rate limiting in a Node.js API?
+```
+→ Formulate your answer → Query hivemind → Analyze → Synthesize
 
-## Context Size
+### Codebase question
+```
+/hive Review my authentication implementation for security issues
+```
+→ Explore codebase → Read auth files → Formulate your answer → Query hivemind with context → Iterate if needed → Synthesize
 
-Don't worry about context being "too long". The hivemind can handle large contexts. It's better to include too much raw information than to lose signal by summarizing.
+### Follow-up example
+```
+After initial responses, GPT suggests using Redis but Gemini prefers in-memory.
+You investigate with WebSearch to check current best practices.
+Then send follow-up with your findings and previous responses.
+```
 
-If context truly exceeds limits, prioritize:
-1. Actual source code of files being analyzed
-2. Complete explore agent outputs
-3. Error messages / logs if relevant
+---
 
 ## Setup
 
 If the hivemind MCP server is not configured:
 
-1. Add the MCP server:
-   ```bash
-   claude mcp add hivemind -- node /path/to/hivemind/packages/mcp/dist/index.js
-   ```
+```bash
+claude mcp add hivemind -- node /path/to/hivemind/packages/mcp/dist/index.js
+```
 
-2. Configure at least one API key:
-   ```
-   configure_keys({ openai: "sk-..." })
-   ```
+Configure API keys:
+```
+configure_keys({ openai: "sk-...", google: "AIza..." })
+```
 
-   You can use 1, 2, or all 3 providers (OpenAI, Anthropic, Google).
-
-## Arguments
-
-- `$ARGUMENTS` - The question to ask the Hivemind
+Note: Anthropic key is optional - you (Claude Code) already provide the Claude perspective.

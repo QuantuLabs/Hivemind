@@ -1,18 +1,15 @@
 import {
   OpenAIProvider,
-  AnthropicProvider,
   GoogleProvider,
-  buildAnalysisPrompt,
-  buildRefinementPrompt,
-  buildSynthesisPrompt,
-  parseAnalysis,
   type ModelResponse,
-  type ConsensusAnalysis,
-  type BaseProvider,
 } from '@hivemind/core'
-import { getConfig, hasRequiredKeys, getSettings, getAvailableProviders, type Provider } from '../config'
+import { getConfig, hasRequiredKeys, getSettings, type Provider } from '../config'
+import { trackUsage } from '../usage'
 
-const MAX_ROUNDS = 3
+// Estimate token count from text (rough approximation: ~4 chars per token)
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
+}
 
 // Default models per provider
 const DEFAULT_MODELS: Record<Provider, string> = {
@@ -21,21 +18,32 @@ const DEFAULT_MODELS: Record<Provider, string> = {
   google: 'gemini-3-pro-preview',
 }
 
+export interface PreviousResponse {
+  provider: string
+  content: string
+}
+
 export interface HivemindToolParams {
   question: string
   context?: string  // Additional context (code, files, etc.) to include with the question
-  models?: string[]
-  consensusOnly?: boolean
+  previousResponses?: PreviousResponse[]  // For follow-up queries, include previous model responses
 }
 
 export interface HivemindToolResult {
-  consensus: string
-  rounds: number
-  modelResponses?: Array<{ model: string; content: string }>
-  analysis?: ConsensusAnalysis
-  providers?: string[]
+  responses: Array<{
+    provider: string
+    model: string
+    content: string
+  }>
 }
 
+/**
+ * Query GPT and Gemini in parallel and return raw responses.
+ * Claude Code acts as the orchestrator - this tool is just a proxy to other models.
+ *
+ * When previousResponses is provided, the models are asked to reconsider
+ * their answers based on what other models said.
+ */
 export async function hivemindTool(
   params: HivemindToolParams
 ): Promise<HivemindToolResult> {
@@ -47,142 +55,71 @@ export async function hivemindTool(
 
   const config = getConfig()
   const settings = getSettings()
-  const availableProviders = getAvailableProviders()
-  const { question, context, consensusOnly = false } = params
+  const { question, context, previousResponses } = params
 
-  // Create only available providers
-  const providers: Partial<Record<Provider, BaseProvider>> = {}
+  // Create providers (only OpenAI and Google - Claude Code is the orchestrator)
+  const providers: Array<{ name: Provider; provider: OpenAIProvider | GoogleProvider }> = []
 
   if (config.apiKeys.openai) {
-    providers.openai = new OpenAIProvider({ apiKey: config.apiKeys.openai })
-  }
-  if (config.apiKeys.anthropic) {
-    providers.anthropic = new AnthropicProvider({ apiKey: config.apiKeys.anthropic })
+    providers.push({
+      name: 'openai',
+      provider: new OpenAIProvider({ apiKey: config.apiKeys.openai }),
+    })
   }
   if (config.apiKeys.google) {
-    providers.google = new GoogleProvider({
-      apiKey: config.apiKeys.google,
-      useGrounding: settings.useGrounding,
+    providers.push({
+      name: 'google',
+      provider: new GoogleProvider({
+        apiKey: config.apiKeys.google,
+        useGrounding: settings.useGrounding,
+      }),
     })
   }
 
-  // Build message content with optional context
-  const messageContent = context
-    ? `Context:\n${context}\n\nQuestion: ${question}`
-    : question
+  if (providers.length === 0) {
+    throw new Error('No providers available. Configure at least OpenAI or Google API key.')
+  }
+
+  // Build message content
+  let messageContent = ''
+
+  // Add context if provided
+  if (context) {
+    messageContent += `Context:\n${context}\n\n`
+  }
+
+  // Add question
+  messageContent += `Question: ${question}`
+
+  // Add previous responses for follow-up queries
+  if (previousResponses && previousResponses.length > 0) {
+    messageContent += '\n\n---\n\nPrevious responses from models:\n'
+    for (const resp of previousResponses) {
+      messageContent += `\n### ${resp.provider}:\n${resp.content}\n`
+    }
+    messageContent += '\n---\n\nPlease reconsider and provide your updated response, taking into account the perspectives above.'
+  }
 
   const messages = [{ role: 'user' as const, content: messageContent }]
 
-  // Query all available providers in parallel
-  const responses: ModelResponse[] = await Promise.all(
-    availableProviders.map(async (providerName) => {
-      const provider = providers[providerName]!
-      const model = DEFAULT_MODELS[providerName]
+  // Query all providers in parallel
+  const responses = await Promise.all(
+    providers.map(async ({ name, provider }) => {
+      const model = DEFAULT_MODELS[name]
       const content = await provider.chat(messages, model as any)
+
+      // Track token usage (estimates)
+      const inputTokens = estimateTokens(messageContent)
+      const outputTokens = estimateTokens(content)
+      trackUsage(name, inputTokens, outputTokens)
+
       return {
+        provider: name,
         model,
-        provider: providerName,
         content,
-        timestamp: Date.now(),
       }
     })
   )
 
-  // If only one provider: return directly without deliberation
-  if (availableProviders.length === 1) {
-    return {
-      consensus: responses[0].content,
-      rounds: 1,
-      providers: availableProviders,
-      ...(consensusOnly ? {} : { modelResponses: responses.map(r => ({ model: r.model, content: r.content })) }),
-    }
-  }
-
-  // Choose orchestrator (preference: anthropic > openai > google)
-  const orchestratorName = availableProviders.includes('anthropic')
-    ? 'anthropic'
-    : availableProviders.includes('openai')
-    ? 'openai'
-    : 'google'
-  const orchestrator = providers[orchestratorName]!
-  const orchestratorModel = DEFAULT_MODELS[orchestratorName]
-
-  let round = 0
-  let currentResponses = responses
-  let analysis: ConsensusAnalysis = {
-    hasConsensus: false,
-    agreements: [],
-    divergences: [],
-    confidence: 0,
-  }
-
-  // Deliberation loop (only if 2+ providers)
-  while (round < MAX_ROUNDS) {
-    round++
-
-    // Analyze responses using orchestrator
-    const analysisPrompt = buildAnalysisPrompt(question, currentResponses)
-    const analysisResponse = await orchestrator.chat(
-      [{ role: 'user', content: analysisPrompt }],
-      orchestratorModel as any
-    )
-
-    analysis = parseAnalysis(analysisResponse)
-
-    // Check for consensus
-    if (analysis.hasConsensus || analysis.confidence > 0.8) {
-      break
-    }
-
-    // If no consensus and not last round, do refinement
-    if (round < MAX_ROUNDS) {
-      const refinedResponses = await Promise.all(
-        availableProviders.map(async (providerName) => {
-          const provider = providers[providerName]!
-          const model = DEFAULT_MODELS[providerName]
-          const previousResponse = currentResponses.find(r => r.provider === providerName)!
-
-          const refinementPrompt = buildRefinementPrompt(
-            question,
-            previousResponse.content,
-            currentResponses,
-            analysis.divergences,
-            model
-          )
-
-          const content = await provider.chat(
-            [{ role: 'user', content: refinementPrompt }],
-            model as any
-          )
-
-          return {
-            model,
-            provider: providerName,
-            content,
-            timestamp: Date.now(),
-          }
-        })
-      )
-      currentResponses = refinedResponses
-    }
-  }
-
-  // Synthesis
-  const synthesisPrompt = buildSynthesisPrompt(question, currentResponses, analysis, round)
-  const consensus = await orchestrator.chat(
-    [{ role: 'user', content: synthesisPrompt }],
-    orchestratorModel as any
-  )
-
-  if (consensusOnly) {
-    return { consensus, rounds: round, providers: availableProviders }
-  }
-
-  return {
-    consensus,
-    rounds: round,
-    modelResponses: currentResponses.map((r) => ({ model: r.model, content: r.content })),
-    analysis,
-    providers: availableProviders,
-  }
+  return { responses }
 }

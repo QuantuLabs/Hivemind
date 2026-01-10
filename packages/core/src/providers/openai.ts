@@ -16,6 +16,16 @@ export class OpenAIProvider extends BaseProvider {
     model: ModelId,
     callbacks?: StreamCallbacks
   ): Promise<string> {
+    // OpenAI Automatic Prompt Caching:
+    // - Enabled automatically for prompts >= 1024 tokens (no code changes needed)
+    // - Caches the longest matching prefix, increments of 128 tokens
+    // - 50% cost reduction on cached input tokens
+    // - 50-80% latency reduction (time-to-first-token)
+    // - Cache TTL: 5-10 minutes of inactivity, max 1 hour
+    // - Tip: Place static content (instructions, examples) at the START of prompts
+    // - Supported: GPT-4o, GPT-4o mini, o1-preview, o1-mini, and fine-tuned versions
+    // See: https://platform.openai.com/docs/guides/prompt-caching
+
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {

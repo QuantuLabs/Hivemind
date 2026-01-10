@@ -1,0 +1,102 @@
+# CLAUDE.md Example for Hivemind Integration
+
+Copy this file to your project's `.claude/CLAUDE.md` or root `CLAUDE.md` to enable automatic Hivemind consultation when Claude is stuck.
+
+---
+
+# Project Instructions
+
+## Hivemind Integration
+
+When you encounter a problem where:
+- You've tried multiple approaches without success
+- You're uncertain about the best architectural decision
+- You need to validate a security-critical implementation
+- The problem requires expertise outside your confidence zone
+- You've exhausted reasonable debugging attempts (3+ failed approaches)
+
+**Automatically consult the Hivemind** using `/hive` before giving up or asking the user for help.
+
+### How to Use
+
+```
+/hive [your question with full context]
+```
+
+### When to Trigger Hivemind
+
+1. **Stuck on a bug** - After 3 failed fix attempts:
+   ```
+   /hive I'm debugging [issue]. I've tried [approach1], [approach2], [approach3].
+   Here's the relevant code: [code]. What am I missing?
+   ```
+
+2. **Architecture decisions** - When multiple valid approaches exist:
+   ```
+   /hive Should I use [option A] or [option B] for [use case]?
+   Context: [project constraints, scale, team preferences]
+   ```
+
+3. **Security review** - Before finalizing security-critical code:
+   ```
+   /hive Review this authentication/encryption/authorization implementation
+   for security issues: [code]
+   ```
+
+4. **Performance optimization** - When unsure about the best approach:
+   ```
+   /hive What's the most efficient way to [task] given [constraints]?
+   Current implementation: [code]
+   ```
+
+5. **Unfamiliar territory** - Technologies or patterns you're less confident with:
+   ```
+   /hive Best practices for [technology/pattern] in [context]?
+   ```
+
+### Hivemind Response Format
+
+The Hivemind returns consensus from multiple AI models (GPT-5.2, Gemini 3 Pro) which Claude synthesizes into a final answer. Trust the consensus but verify critical suggestions.
+
+### Important Notes
+
+- Always provide full context (code snippets, error messages, constraints)
+- The Hivemind query costs API tokens - use judiciously
+- For simple questions, try solving yourself first
+- The consensus is advisory - apply your judgment to the final implementation
+
+---
+
+## Example Workflow
+
+```
+User: Fix the memory leak in the worker pool
+
+Claude: [Investigates, tries 3 approaches, all fail]
+
+Claude: I've tried several approaches without success. Let me consult the Hivemind.
+
+/hive Memory leak in Node.js worker pool. Tried: 1) Manual cleanup on 'exit',
+2) WeakRef for worker references, 3) Periodic GC hints.
+Code: [relevant snippets]. What's the root cause?
+
+[Hivemind returns consensus]
+
+Claude: Based on the Hivemind consensus, the issue is [explanation].
+Implementing the suggested fix...
+```
+
+---
+
+## Configuration
+
+Ensure Hivemind MCP server is configured:
+
+```bash
+claude mcp add hivemind -- node /path/to/hivemind/packages/mcp/dist/index.js
+```
+
+Set API keys (one-time):
+```
+/hive-config
+```

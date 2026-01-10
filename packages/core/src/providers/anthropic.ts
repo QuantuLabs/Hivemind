@@ -1,6 +1,15 @@
 import type { ModelId, Provider } from '../types'
 import { BaseProvider, type StreamCallbacks, type ProviderConfig } from './base'
 
+// Minimum tokens required for Anthropic prompt caching to be effective
+// See: https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+const MIN_CACHE_TOKENS = 1024
+
+// Rough token estimation (~4 chars per token for English text)
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
+}
+
 export class AnthropicProvider extends BaseProvider {
   readonly provider: Provider = 'anthropic'
 
@@ -16,18 +25,59 @@ export class AnthropicProvider extends BaseProvider {
     model: ModelId,
     callbacks?: StreamCallbacks
   ): Promise<string> {
+    // Anthropic Prompt Caching Strategy:
+    // - Cache the first substantial user message (typically contains context)
+    // - Requires minimum 1024 tokens to be effective
+    // - cache_control: {type: "ephemeral"} marks the cache breakpoint
+    // - Content BEFORE the breakpoint is cached and reused on follow-ups
+    // - Cache has 5-minute TTL, refreshed on each hit
+    // - 90% cost reduction on cached tokens (cache reads)
+    // See: https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+
+    const transformedMessages = this.enableCaching
+      ? messages.map((msg, idx) => {
+          // Cache the first user message if it's substantial enough
+          // This typically contains the context/instructions which are reused
+          if (idx === 0 && msg.role === 'user') {
+            const tokenEstimate = estimateTokens(msg.content)
+
+            // Only apply cache_control if content meets minimum threshold
+            if (tokenEstimate >= MIN_CACHE_TOKENS) {
+              return {
+                role: msg.role,
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: msg.content,
+                    cache_control: { type: 'ephemeral' },
+                  },
+                ],
+              }
+            }
+          }
+          return msg
+        })
+      : messages
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': this.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    }
+
+    // Add beta header for prompt caching (required even if feature is GA for some accounts)
+    if (this.enableCaching) {
+      headers['anthropic-beta'] = 'prompt-caching-2024-07-31'
+    }
+
     const response = await fetch(`${this.baseUrl}/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers,
       body: JSON.stringify({
         model,
         max_tokens: 4096,
-        messages,
+        messages: transformedMessages,
         stream: !!callbacks?.onToken,
       }),
     })
