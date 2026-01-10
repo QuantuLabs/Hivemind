@@ -1,20 +1,24 @@
 export type Provider = 'openai' | 'anthropic' | 'google'
 
 export type ModelId =
-  // OpenAI models
-  | 'gpt-4.1'
-  | 'gpt-4.1-mini'
-  | 'gpt-4.1-nano'
-  | 'gpt-4o'
-  | 'gpt-4o-mini'
+  // OpenAI models (GPT-5 series + O4)
+  | 'gpt-5.2'
+  | 'gpt-5.1'
+  | 'gpt-5'
+  | 'gpt-5-mini'
+  | 'gpt-5-nano'
+  | 'o4-mini'
   // Anthropic models
-  | 'claude-opus-4-5-20251124'
-  | 'claude-sonnet-4-5-20250929'
+  | 'claude-opus-4-5-20251101'
+  | 'claude-sonnet-4-5-20250514'
   | 'claude-opus-4-20250514'
   | 'claude-sonnet-4-20250514'
-  // Google models
+  // Google models (Gemini 3 + 2.5)
+  | 'gemini-3-pro-preview'
+  | 'gemini-3-flash-preview'
   | 'gemini-2.5-pro'
   | 'gemini-2.5-flash'
+  | 'gemini-2.5-flash-lite'
   | 'gemini-2.0-flash'
 
 export interface Model {
@@ -79,31 +83,35 @@ export interface HivemindResult {
 }
 
 export const MODELS: Model[] = [
-  // OpenAI models (latest first)
-  { id: 'gpt-4.1', name: 'GPT-4.1', provider: 'openai', isDefault: true },
-  { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'openai' },
-  { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', provider: 'openai' },
-  { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
-  // Anthropic models (latest first)
-  { id: 'claude-opus-4-5-20251124', name: 'Claude Opus 4.5', provider: 'anthropic', isDefault: true },
-  { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', provider: 'anthropic' },
+  // OpenAI models (GPT-5 series + O4)
+  { id: 'gpt-5.2', name: 'GPT-5.2', provider: 'openai', isDefault: true },
+  { id: 'gpt-5.1', name: 'GPT-5.1', provider: 'openai' },
+  { id: 'gpt-5', name: 'GPT-5', provider: 'openai' },
+  { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai' },
+  { id: 'gpt-5-nano', name: 'GPT-5 Nano', provider: 'openai' },
+  { id: 'o4-mini', name: 'O4 Mini', provider: 'openai' },
+  // Anthropic models
+  { id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5', provider: 'anthropic', isDefault: true },
+  { id: 'claude-sonnet-4-5-20250514', name: 'Claude Sonnet 4.5', provider: 'anthropic' },
   { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'anthropic' },
   { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic' },
-  // Google models (latest first)
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google', isDefault: true },
+  // Google models (Gemini 3 + 2.5)
+  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'google', isDefault: true },
+  { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'google' },
+  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google' },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', provider: 'google' },
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'google' },
 ]
 
 export const DEFAULT_MODELS: Record<Provider, ModelId> = {
-  openai: 'gpt-4.1',
-  anthropic: 'claude-opus-4-5-20251124',
-  google: 'gemini-2.5-pro',
+  openai: 'gpt-5.2',
+  anthropic: 'claude-opus-4-5-20251101',
+  google: 'gemini-3-pro-preview',
 }
 
 export const DEFAULT_HIVEMIND_MODELS: ModelId[] = [
-  'gpt-4.1',
-  'claude-opus-4-5-20251124',
-  'gemini-2.5-pro',
+  'gpt-5.2',
+  'claude-opus-4-5-20251101',
+  'gemini-3-pro-preview',
 ]

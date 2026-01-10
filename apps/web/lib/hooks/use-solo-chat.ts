@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { OpenAIProvider, AnthropicProvider, GoogleProvider } from '@hivemind/core'
 import { useSettingsStore } from '../stores/settings-store'
 import { useConversationStore } from '../stores/conversation-store'
+import { withRetry } from '../utils'
 
 export function useSoloChat() {
   const { selectedModel, apiKeys } = useSettingsStore()
@@ -34,13 +35,22 @@ export function useSoloChat() {
         throw new Error('Unknown model')
       }
 
-      const response = await provider.chat(messages, selectedModel, {
-        onToken,
-        onComplete: () => {},
-        onError: (error) => {
-          throw error
-        },
-      })
+      const response = await withRetry(
+        () => provider.chat(messages, selectedModel, {
+          onToken,
+          onComplete: () => {},
+          onError: (error) => {
+            throw error
+          },
+        }),
+        {
+          maxAttempts: 3,
+          delayMs: 1000,
+          onRetry: (attempt, error) => {
+            console.warn(`[SoloChat] Retry attempt ${attempt} after error: ${error.message}`)
+          },
+        }
+      )
 
       return response
     },

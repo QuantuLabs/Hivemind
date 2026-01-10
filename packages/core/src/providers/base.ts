@@ -9,6 +9,7 @@ export interface StreamCallbacks {
 export interface ProviderConfig {
   apiKey: string
   baseUrl?: string
+  useGrounding?: boolean
 }
 
 export abstract class BaseProvider {

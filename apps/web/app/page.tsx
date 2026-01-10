@@ -24,7 +24,8 @@ export default function Home() {
   // Load API keys on mount
   useEffect(() => {
     const loadKeys = async () => {
-      if (storage.isUnlocked()) {
+      const state = await storage.getState()
+      if (!state.isLocked && state.hasKeys) {
         const keys = await storage.getApiKeys()
         if (keys) {
           setApiKeys(keys)
@@ -41,7 +42,7 @@ export default function Home() {
 
     // Create new conversation if none exists
     if (!conversationId) {
-      conversationId = createConversation(messageMode)
+      conversationId = await createConversation(messageMode)
     }
 
     // Add user message

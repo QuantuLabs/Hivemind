@@ -94,12 +94,6 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           </div>
         </div>
 
-        {/* Hivemind info */}
-        {useHivemind && (
-          <p className="text-xs text-muted-foreground mt-3 text-center">
-            GPT-4o, Claude, and Gemini will deliberate to reach consensus
-          </p>
-        )}
       </form>
     </div>
   )

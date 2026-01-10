@@ -3,12 +3,14 @@ import { BaseProvider, type StreamCallbacks, type ProviderConfig } from './base'
 
 export class GoogleProvider extends BaseProvider {
   readonly provider: Provider = 'google'
+  private useGrounding: boolean
 
   constructor(config: ProviderConfig) {
     super({
       ...config,
       baseUrl: config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
     })
+    this.useGrounding = config.useGrounding ?? false
   }
 
   async chat(
@@ -24,12 +26,23 @@ export class GoogleProvider extends BaseProvider {
     const endpoint = callbacks?.onToken ? 'streamGenerateContent' : 'generateContent'
     const url = `${this.baseUrl}/models/${model}:${endpoint}?key=${this.apiKey}`
 
+    // Build request body with optional grounding
+    const requestBody: Record<string, unknown> = { contents }
+
+    if (this.useGrounding) {
+      requestBody.tools = [
+        {
+          google_search: {},
+        },
+      ]
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ contents }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {

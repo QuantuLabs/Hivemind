@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { hivemindTool, type HivemindToolParams } from './tools/hivemind'
-import { getConfig, setApiKey, hasRequiredKeys } from './config'
+import { getConfig, setApiKey, hasRequiredKeys, updateSettings, getSettings, initializeCache, isRunningInClaudeCode, getAvailableProviders, getAllKeySources, getEnvFilePath } from './config'
 
 const server = new Server(
   {
@@ -28,13 +28,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'hivemind',
         description:
-          'Query multiple AI models (GPT-4o, Claude, Gemini) and get a synthesized consensus answer. The models deliberate through multiple rounds if they disagree.',
+          'Query multiple AI models (GPT-5.2, Claude Opus 4.5, Gemini 3 Pro) and get a synthesized consensus answer. The models deliberate through multiple rounds if they disagree. Pass context (code, files, etc.) to give all models the same information.',
         inputSchema: {
           type: 'object',
           properties: {
             question: {
               type: 'string',
               description: 'The question to ask the AI models',
+            },
+            context: {
+              type: 'string',
+              description: 'Additional context to include (code snippets, file contents, documentation, etc.). This context will be sent to all models.',
             },
             consensusOnly: {
               type: 'boolean',
@@ -72,6 +76,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {},
+        },
+      },
+      {
+        name: 'configure_hive',
+        description: 'Configure Hivemind settings like grounding search',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            useGrounding: {
+              type: 'boolean',
+              description: 'Enable grounding search for enhanced answers with web data (default: true)',
+            },
+            claudeCodeMode: {
+              type: 'boolean',
+              description: 'Skip Anthropic API calls when running inside Claude Code (default: true). When enabled, only OpenAI and Google are queried since Claude is already the host.',
+            },
+          },
         },
       },
     ],
@@ -114,9 +135,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     case 'configure_keys': {
       const keys = args as { openai?: string; anthropic?: string; google?: string }
 
-      if (keys.openai) setApiKey('openai', keys.openai)
-      if (keys.anthropic) setApiKey('anthropic', keys.anthropic)
-      if (keys.google) setApiKey('google', keys.google)
+      // Store API keys securely (in OS keychain if available)
+      if (keys.openai) await setApiKey('openai', keys.openai)
+      if (keys.anthropic) await setApiKey('anthropic', keys.anthropic)
+      if (keys.google) await setApiKey('google', keys.google)
 
       const config = getConfig()
       const configured = Object.entries(config.apiKeys)
@@ -142,12 +164,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case 'check_status': {
       const config = getConfig()
+      const availableProviders = getAvailableProviders()
+      const keySources = getAllKeySources()
+
       const status = {
         ready: hasRequiredKeys(),
+        envFile: getEnvFilePath(),
         keys: {
-          openai: !!config.apiKeys.openai,
-          anthropic: !!config.apiKeys.anthropic,
-          google: !!config.apiKeys.google,
+          openai: {
+            configured: !!config.apiKeys.openai,
+            source: keySources.find(k => k.provider === 'openai')?.source || 'none',
+          },
+          anthropic: {
+            configured: !!config.apiKeys.anthropic,
+            source: keySources.find(k => k.provider === 'anthropic')?.source || 'none',
+          },
+          google: {
+            configured: !!config.apiKeys.google,
+            source: keySources.find(k => k.provider === 'google')?.source || 'none',
+          },
+        },
+        settings: config.settings,
+        environment: {
+          claudeCodeDetected: isRunningInClaudeCode(),
+          activeProviders: availableProviders,
+          anthropicSkipped: config.settings.claudeCodeMode && !!config.apiKeys.anthropic,
         },
       }
 
@@ -156,6 +197,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: 'text',
             text: JSON.stringify(status, null, 2),
+          },
+        ],
+      }
+    }
+
+    case 'configure_hive': {
+      const settings = args as { useGrounding?: boolean; claudeCodeMode?: boolean }
+      const updated = updateSettings(settings)
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Hivemind settings updated:\n${JSON.stringify(updated, null, 2)}`,
           },
         ],
       }
@@ -176,6 +231,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start the server
 async function main() {
+  // Initialize API key cache from keychain/file
+  await initializeCache()
+
   const transport = new StdioServerTransport()
   await server.connect(transport)
   console.error('Hivemind MCP server running on stdio')

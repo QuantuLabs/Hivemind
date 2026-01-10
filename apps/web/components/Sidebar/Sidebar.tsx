@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect } from 'react'
-import { PenSquare, MessageCircle } from 'lucide-react'
+import { PenSquare, MessageCircle, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ConversationList } from './ConversationList'
 import { useConversationStore } from '@/lib/stores/conversation-store'
 
 export function Sidebar() {
-  const { loadConversations, createConversation, conversations } = useConversationStore()
+  const { loadConversations, createConversation, conversations, exportConversations } = useConversationStore()
 
   useEffect(() => {
     loadConversations()
@@ -51,12 +51,20 @@ export function Sidebar() {
         )}
       </ScrollArea>
 
-      {/* Bottom section */}
-      <div className="p-3 border-t border-border">
-        <div className="text-xs text-muted-foreground text-center">
-          Powered by GPT-4o, Claude & Gemini
+      {/* Export Button */}
+      {conversations.length > 0 && (
+        <div className="p-3 border-t border-border">
+          <Button
+            onClick={exportConversations}
+            variant="ghost"
+            size="sm"
+            className="w-full h-8 justify-start text-muted-foreground hover:text-foreground"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export all conversations
+          </Button>
         </div>
-      </div>
+      )}
     </aside>
   )
 }

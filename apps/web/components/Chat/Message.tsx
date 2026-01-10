@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import type { Message as MessageType } from '@hivemind/core'
-import { User } from 'lucide-react'
+import { User, Copy, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import { Button } from '@/components/ui/button'
 
 interface MessageProps {
   message: MessageType
@@ -11,6 +13,13 @@ interface MessageProps {
 
 export function Message({ message }: MessageProps) {
   const isUser = message.role === 'user'
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(message.content)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className={cn('group px-4 py-5', !isUser && 'bg-muted/30')}>
@@ -51,6 +60,20 @@ export function Message({ message }: MessageProps) {
                 consensus
               </span>
             )}
+            {/* Copy button - appears on hover */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={handleCopy}
+              title={copied ? 'Copied!' : 'Copy message'}
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+            </Button>
           </div>
 
           <div className="text-sm text-foreground/90 leading-relaxed">

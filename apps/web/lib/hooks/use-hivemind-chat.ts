@@ -15,6 +15,7 @@ import {
 } from '@hivemind/core'
 import { useSettingsStore } from '../stores/settings-store'
 import { useConversationStore } from '../stores/conversation-store'
+import { withRetry } from '../utils'
 
 const MAX_ROUNDS = 3
 
@@ -81,46 +82,63 @@ export function useHivemindChat() {
       const anthropicModel = providerModels.anthropic
       const googleModel = providerModels.google
 
+      const retryOptions = {
+        maxAttempts: 3,
+        delayMs: 1000,
+        onRetry: (attempt: number, error: Error) => {
+          console.warn(`[Hivemind] Retry attempt ${attempt} after error: ${error.message}`)
+        },
+      }
+
       const [gptResponse, claudeResponse, geminiResponse] = await Promise.all([
-        openai.chat(messages, openaiModel).then((content) => {
-          onStatus({
-            phase: 'initial',
-            message: 'Querying models...',
-            modelStatuses: {
-              openai: 'done',
-              anthropic: 'loading',
-              google: 'loading',
-            },
-            progress: 30,
-          })
-          return { model: openaiModel, provider: 'openai' as const, content, timestamp: Date.now() }
-        }),
-        anthropic.chat(messages, anthropicModel).then((content) => {
-          onStatus({
-            phase: 'initial',
-            message: 'Querying models...',
-            modelStatuses: {
-              openai: 'done',
-              anthropic: 'done',
-              google: 'loading',
-            },
-            progress: 50,
-          })
-          return { model: anthropicModel, provider: 'anthropic' as const, content, timestamp: Date.now() }
-        }),
-        google.chat(messages, googleModel).then((content) => {
-          onStatus({
-            phase: 'initial',
-            message: 'Querying models...',
-            modelStatuses: {
-              openai: 'done',
-              anthropic: 'done',
-              google: 'done',
-            },
-            progress: 60,
-          })
-          return { model: googleModel, provider: 'google' as const, content, timestamp: Date.now() }
-        }),
+        withRetry(
+          () => openai.chat(messages, openaiModel).then((content) => {
+            onStatus({
+              phase: 'initial',
+              message: 'Querying models...',
+              modelStatuses: {
+                openai: 'done',
+                anthropic: 'loading',
+                google: 'loading',
+              },
+              progress: 30,
+            })
+            return { model: openaiModel, provider: 'openai' as const, content, timestamp: Date.now() }
+          }),
+          retryOptions
+        ),
+        withRetry(
+          () => anthropic.chat(messages, anthropicModel).then((content) => {
+            onStatus({
+              phase: 'initial',
+              message: 'Querying models...',
+              modelStatuses: {
+                openai: 'done',
+                anthropic: 'done',
+                google: 'loading',
+              },
+              progress: 50,
+            })
+            return { model: anthropicModel, provider: 'anthropic' as const, content, timestamp: Date.now() }
+          }),
+          retryOptions
+        ),
+        withRetry(
+          () => google.chat(messages, googleModel).then((content) => {
+            onStatus({
+              phase: 'initial',
+              message: 'Querying models...',
+              modelStatuses: {
+                openai: 'done',
+                anthropic: 'done',
+                google: 'done',
+              },
+              progress: 60,
+            })
+            return { model: googleModel, provider: 'google' as const, content, timestamp: Date.now() }
+          }),
+          retryOptions
+        ),
       ])
 
       responses = [gptResponse, claudeResponse, geminiResponse]
@@ -139,9 +157,12 @@ export function useHivemindChat() {
         })
 
         const analysisPrompt = buildAnalysisPrompt(question, responses)
-        const analysisResponse = await orchestrator.chat(
-          [{ role: 'user', content: analysisPrompt }],
-          orchestratorModel
+        const analysisResponse = await withRetry(
+          () => orchestrator.chat(
+            [{ role: 'user', content: analysisPrompt }],
+            orchestratorModel
+          ),
+          retryOptions
         )
 
         analysis = parseAnalysis(analysisResponse)
@@ -168,18 +189,27 @@ export function useHivemindChat() {
 
           // Each model refines based on others' responses
           const [refinedGpt, refinedClaude, refinedGemini] = await Promise.all([
-            openai.chat(
-              [{ role: 'user', content: buildRefinementPrompt(question, gptResponse.content, responses, analysis.divergences, openaiModel) }],
-              openaiModel
-            ).then((content) => ({ ...gptResponse, content, timestamp: Date.now() })),
-            anthropic.chat(
-              [{ role: 'user', content: buildRefinementPrompt(question, claudeResponse.content, responses, analysis.divergences, anthropicModel) }],
-              anthropicModel
-            ).then((content) => ({ ...claudeResponse, content, timestamp: Date.now() })),
-            google.chat(
-              [{ role: 'user', content: buildRefinementPrompt(question, geminiResponse.content, responses, analysis.divergences, googleModel) }],
-              googleModel
-            ).then((content) => ({ ...geminiResponse, content, timestamp: Date.now() })),
+            withRetry(
+              () => openai.chat(
+                [{ role: 'user', content: buildRefinementPrompt(question, gptResponse.content, responses, analysis.divergences, openaiModel) }],
+                openaiModel
+              ).then((content) => ({ ...gptResponse, content, timestamp: Date.now() })),
+              retryOptions
+            ),
+            withRetry(
+              () => anthropic.chat(
+                [{ role: 'user', content: buildRefinementPrompt(question, claudeResponse.content, responses, analysis.divergences, anthropicModel) }],
+                anthropicModel
+              ).then((content) => ({ ...claudeResponse, content, timestamp: Date.now() })),
+              retryOptions
+            ),
+            withRetry(
+              () => google.chat(
+                [{ role: 'user', content: buildRefinementPrompt(question, geminiResponse.content, responses, analysis.divergences, googleModel) }],
+                googleModel
+              ).then((content) => ({ ...geminiResponse, content, timestamp: Date.now() })),
+              retryOptions
+            ),
           ])
 
           responses = [refinedGpt, refinedClaude, refinedGemini]
@@ -194,9 +224,12 @@ export function useHivemindChat() {
       })
 
       const synthesisPrompt = buildSynthesisPrompt(question, responses, analysis, round)
-      const consensus = await orchestrator.chat(
-        [{ role: 'user', content: synthesisPrompt }],
-        orchestratorModel
+      const consensus = await withRetry(
+        () => orchestrator.chat(
+          [{ role: 'user', content: synthesisPrompt }],
+          orchestratorModel
+        ),
+        retryOptions
       )
 
       onStatus({

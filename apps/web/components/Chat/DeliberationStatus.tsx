@@ -10,9 +10,9 @@ interface DeliberationStatusProps {
 }
 
 const providerLabels = {
-  openai: 'GPT-4o',
-  anthropic: 'Claude',
-  google: 'Gemini',
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  google: 'Google',
 }
 
 export function DeliberationStatus({ status }: DeliberationStatusProps) {

@@ -9,31 +9,40 @@ function generateId(): string {
 interface ConversationState {
   conversations: Conversation[]
   activeConversationId: string | null
+  isLoading: boolean
 
   // Actions
-  loadConversations: () => void
-  createConversation: (mode: 'solo' | 'hivemind') => string
-  deleteConversation: (id: string) => void
+  loadConversations: () => Promise<void>
+  createConversation: (mode: 'solo' | 'hivemind') => Promise<string>
+  deleteConversation: (id: string) => Promise<void>
   setActiveConversation: (id: string | null) => void
-  addMessage: (conversationId: string, message: Omit<Message, 'id' | 'timestamp'>) => void
-  updateMessage: (conversationId: string, messageId: string, content: string) => void
+  addMessage: (conversationId: string, message: Omit<Message, 'id' | 'timestamp'>) => Promise<void>
+  updateMessage: (conversationId: string, messageId: string, content: string) => Promise<void>
   getActiveConversation: () => Conversation | undefined
+  exportConversations: () => void
+  exportActiveConversation: () => void
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
   conversations: [],
   activeConversationId: null,
+  isLoading: false,
 
-  loadConversations: () => {
-    const conversations = storage.getConversations()
-    set({ conversations })
+  loadConversations: async () => {
+    set({ isLoading: true })
+    try {
+      const conversations = await storage.getConversations()
+      set({ conversations, isLoading: false })
 
-    if (conversations.length > 0 && !get().activeConversationId) {
-      set({ activeConversationId: conversations[0].id })
+      if (conversations.length > 0 && !get().activeConversationId) {
+        set({ activeConversationId: conversations[0].id })
+      }
+    } catch {
+      set({ isLoading: false })
     }
   },
 
-  createConversation: (mode) => {
+  createConversation: async (mode) => {
     const id = generateId()
     const conversation: Conversation = {
       id,
@@ -46,11 +55,11 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
     const conversations = [conversation, ...get().conversations]
     set({ conversations, activeConversationId: id })
-    storage.saveConversations(conversations)
+    await storage.saveConversations(conversations)
     return id
   },
 
-  deleteConversation: (id) => {
+  deleteConversation: async (id) => {
     const conversations = get().conversations.filter((c) => c.id !== id)
     const activeConversationId =
       get().activeConversationId === id
@@ -58,14 +67,14 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         : get().activeConversationId
 
     set({ conversations, activeConversationId })
-    storage.saveConversations(conversations)
+    await storage.saveConversations(conversations)
   },
 
   setActiveConversation: (id) => {
     set({ activeConversationId: id })
   },
 
-  addMessage: (conversationId, message) => {
+  addMessage: async (conversationId, message) => {
     const conversations = get().conversations.map((conv) => {
       if (conv.id !== conversationId) return conv
 
@@ -90,10 +99,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     })
 
     set({ conversations })
-    storage.saveConversations(conversations)
+    await storage.saveConversations(conversations)
   },
 
-  updateMessage: (conversationId, messageId, content) => {
+  updateMessage: async (conversationId, messageId, content) => {
     const conversations = get().conversations.map((conv) => {
       if (conv.id !== conversationId) return conv
 
@@ -107,11 +116,50 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     })
 
     set({ conversations })
-    storage.saveConversations(conversations)
+    await storage.saveConversations(conversations)
   },
 
   getActiveConversation: () => {
     const { conversations, activeConversationId } = get()
     return conversations.find((c) => c.id === activeConversationId)
   },
+
+  exportConversations: () => {
+    const { conversations } = get()
+    const data = {
+      exportedAt: new Date().toISOString(),
+      version: '1.0',
+      conversations,
+    }
+    downloadJson(data, `hivemind-conversations-${formatDate()}.json`)
+  },
+
+  exportActiveConversation: () => {
+    const conversation = get().getActiveConversation()
+    if (!conversation) return
+
+    const data = {
+      exportedAt: new Date().toISOString(),
+      version: '1.0',
+      conversation,
+    }
+    const slug = conversation.title.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
+    downloadJson(data, `hivemind-${slug}-${formatDate()}.json`)
+  },
 }))
+
+function downloadJson(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function formatDate(): string {
+  return new Date().toISOString().split('T')[0]
+}

@@ -25,9 +25,9 @@ interface SettingsState {
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   mode: 'solo',
-  selectedModel: 'gpt-4.1',
+  selectedModel: 'gpt-5.2',
   providerModels: { ...DEFAULT_MODELS },
-  orchestratorModel: 'claude-opus-4-5-20251124',
+  orchestratorModel: 'claude-opus-4-5-20251101',
   apiKeys: {},
   isStorageUnlocked: false,
 
@@ -47,9 +47,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setStorageUnlocked: (isStorageUnlocked) => set({ isStorageUnlocked }),
 
   hasRequiredKeys: () => {
-    const { apiKeys } = get()
-    // Need at least one key configured
-    return !!apiKeys.openai || !!apiKeys.anthropic || !!apiKeys.google
+    const { apiKeys, selectedModel } = get()
+    // Check if the key for the selected model's provider is available
+    const model = selectedModel.toLowerCase()
+    if (model.includes('gpt') || model.includes('o1') || model.includes('o3') || model.includes('openai')) {
+      return !!apiKeys.openai
+    }
+    if (model.includes('claude') || model.includes('anthropic')) {
+      return !!apiKeys.anthropic
+    }
+    if (model.includes('gemini') || model.includes('google')) {
+      return !!apiKeys.google
+    }
+    return false
   },
 
   getModelForProvider: (provider) => {

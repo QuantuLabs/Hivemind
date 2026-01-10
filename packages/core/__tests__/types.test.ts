@@ -3,8 +3,8 @@ import { MODELS, DEFAULT_HIVEMIND_MODELS } from '../src/types'
 
 describe('Types', () => {
   describe('MODELS', () => {
-    it('should have 6 models defined', () => {
-      expect(MODELS).toHaveLength(6)
+    it('should have 16 models defined', () => {
+      expect(MODELS).toHaveLength(16)
     })
 
     it('should have models from all three providers', () => {
@@ -32,9 +32,9 @@ describe('Types', () => {
     })
 
     it('should include one model from each provider', () => {
-      expect(DEFAULT_HIVEMIND_MODELS).toContain('gpt-4o')
-      expect(DEFAULT_HIVEMIND_MODELS).toContain('claude-3-5-sonnet-20241022')
-      expect(DEFAULT_HIVEMIND_MODELS).toContain('gemini-2.0-flash-exp')
+      expect(DEFAULT_HIVEMIND_MODELS).toContain('gpt-5.2')
+      expect(DEFAULT_HIVEMIND_MODELS).toContain('claude-opus-4-5-20251101')
+      expect(DEFAULT_HIVEMIND_MODELS).toContain('gemini-3-pro-preview')
     })
   })
 })

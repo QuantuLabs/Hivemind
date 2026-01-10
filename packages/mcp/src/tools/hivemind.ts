@@ -8,13 +8,22 @@ import {
   parseAnalysis,
   type ModelResponse,
   type ConsensusAnalysis,
+  type BaseProvider,
 } from '@hivemind/core'
-import { getConfig, hasRequiredKeys } from '../config'
+import { getConfig, hasRequiredKeys, getSettings, getAvailableProviders, type Provider } from '../config'
 
 const MAX_ROUNDS = 3
 
+// Default models per provider
+const DEFAULT_MODELS: Record<Provider, string> = {
+  openai: 'gpt-5.2',
+  anthropic: 'claude-opus-4-5-20251101',
+  google: 'gemini-3-pro-preview',
+}
+
 export interface HivemindToolParams {
   question: string
+  context?: string  // Additional context (code, files, etc.) to include with the question
   models?: string[]
   consensusOnly?: boolean
 }
@@ -24,6 +33,7 @@ export interface HivemindToolResult {
   rounds: number
   modelResponses?: Array<{ model: string; content: string }>
   analysis?: ConsensusAnalysis
+  providers?: string[]
 }
 
 export async function hivemindTool(
@@ -31,21 +41,74 @@ export async function hivemindTool(
 ): Promise<HivemindToolResult> {
   if (!hasRequiredKeys()) {
     throw new Error(
-      'Missing API keys. Please configure your API keys using the configure_keys tool or by editing ~/.config/hivemind/config.json'
+      'No API keys configured. Please use the configure_keys tool to add at least one API key.'
     )
   }
 
   const config = getConfig()
-  const { question, consensusOnly = false } = params
+  const settings = getSettings()
+  const availableProviders = getAvailableProviders()
+  const { question, context, consensusOnly = false } = params
 
-  const openai = new OpenAIProvider({ apiKey: config.apiKeys.openai! })
-  const anthropic = new AnthropicProvider({ apiKey: config.apiKeys.anthropic! })
-  const google = new GoogleProvider({ apiKey: config.apiKeys.google! })
+  // Create only available providers
+  const providers: Partial<Record<Provider, BaseProvider>> = {}
 
-  const messages = [{ role: 'user' as const, content: question }]
+  if (config.apiKeys.openai) {
+    providers.openai = new OpenAIProvider({ apiKey: config.apiKeys.openai })
+  }
+  if (config.apiKeys.anthropic) {
+    providers.anthropic = new AnthropicProvider({ apiKey: config.apiKeys.anthropic })
+  }
+  if (config.apiKeys.google) {
+    providers.google = new GoogleProvider({
+      apiKey: config.apiKeys.google,
+      useGrounding: settings.useGrounding,
+    })
+  }
+
+  // Build message content with optional context
+  const messageContent = context
+    ? `Context:\n${context}\n\nQuestion: ${question}`
+    : question
+
+  const messages = [{ role: 'user' as const, content: messageContent }]
+
+  // Query all available providers in parallel
+  const responses: ModelResponse[] = await Promise.all(
+    availableProviders.map(async (providerName) => {
+      const provider = providers[providerName]!
+      const model = DEFAULT_MODELS[providerName]
+      const content = await provider.chat(messages, model as any)
+      return {
+        model,
+        provider: providerName,
+        content,
+        timestamp: Date.now(),
+      }
+    })
+  )
+
+  // If only one provider: return directly without deliberation
+  if (availableProviders.length === 1) {
+    return {
+      consensus: responses[0].content,
+      rounds: 1,
+      providers: availableProviders,
+      ...(consensusOnly ? {} : { modelResponses: responses.map(r => ({ model: r.model, content: r.content })) }),
+    }
+  }
+
+  // Choose orchestrator (preference: anthropic > openai > google)
+  const orchestratorName = availableProviders.includes('anthropic')
+    ? 'anthropic'
+    : availableProviders.includes('openai')
+    ? 'openai'
+    : 'google'
+  const orchestrator = providers[orchestratorName]!
+  const orchestratorModel = DEFAULT_MODELS[orchestratorName]
 
   let round = 0
-  let responses: ModelResponse[] = []
+  let currentResponses = responses
   let analysis: ConsensusAnalysis = {
     hasConsensus: false,
     agreements: [],
@@ -53,39 +116,15 @@ export async function hivemindTool(
     confidence: 0,
   }
 
-  // Initial round - query all models in parallel
-  const [gptResponse, claudeResponse, geminiResponse] = await Promise.all([
-    openai.chat(messages, 'gpt-4o').then((content) => ({
-      model: 'gpt-4o' as const,
-      provider: 'openai' as const,
-      content,
-      timestamp: Date.now(),
-    })),
-    anthropic.chat(messages, 'claude-3-5-sonnet-20241022').then((content) => ({
-      model: 'claude-3-5-sonnet-20241022' as const,
-      provider: 'anthropic' as const,
-      content,
-      timestamp: Date.now(),
-    })),
-    google.chat(messages, 'gemini-2.0-flash-exp').then((content) => ({
-      model: 'gemini-2.0-flash-exp' as const,
-      provider: 'google' as const,
-      content,
-      timestamp: Date.now(),
-    })),
-  ])
-
-  responses = [gptResponse, claudeResponse, geminiResponse]
-
-  // Deliberation loop
+  // Deliberation loop (only if 2+ providers)
   while (round < MAX_ROUNDS) {
     round++
 
-    // Analyze responses using Claude
-    const analysisPrompt = buildAnalysisPrompt(question, responses)
-    const analysisResponse = await anthropic.chat(
+    // Analyze responses using orchestrator
+    const analysisPrompt = buildAnalysisPrompt(question, currentResponses)
+    const analysisResponse = await orchestrator.chat(
       [{ role: 'user', content: analysisPrompt }],
-      'claude-3-5-sonnet-20241022'
+      orchestratorModel as any
     )
 
     analysis = parseAnalysis(analysisResponse)
@@ -97,40 +136,53 @@ export async function hivemindTool(
 
     // If no consensus and not last round, do refinement
     if (round < MAX_ROUNDS) {
-      const [refinedGpt, refinedClaude, refinedGemini] = await Promise.all([
-        openai.chat(
-          [{ role: 'user', content: buildRefinementPrompt(question, gptResponse.content, responses, analysis.divergences, 'gpt-4o') }],
-          'gpt-4o'
-        ).then((content) => ({ ...gptResponse, content, timestamp: Date.now() })),
-        anthropic.chat(
-          [{ role: 'user', content: buildRefinementPrompt(question, claudeResponse.content, responses, analysis.divergences, 'claude-3-5-sonnet-20241022') }],
-          'claude-3-5-sonnet-20241022'
-        ).then((content) => ({ ...claudeResponse, content, timestamp: Date.now() })),
-        google.chat(
-          [{ role: 'user', content: buildRefinementPrompt(question, geminiResponse.content, responses, analysis.divergences, 'gemini-2.0-flash-exp') }],
-          'gemini-2.0-flash-exp'
-        ).then((content) => ({ ...geminiResponse, content, timestamp: Date.now() })),
-      ])
+      const refinedResponses = await Promise.all(
+        availableProviders.map(async (providerName) => {
+          const provider = providers[providerName]!
+          const model = DEFAULT_MODELS[providerName]
+          const previousResponse = currentResponses.find(r => r.provider === providerName)!
 
-      responses = [refinedGpt, refinedClaude, refinedGemini]
+          const refinementPrompt = buildRefinementPrompt(
+            question,
+            previousResponse.content,
+            currentResponses,
+            analysis.divergences,
+            model
+          )
+
+          const content = await provider.chat(
+            [{ role: 'user', content: refinementPrompt }],
+            model as any
+          )
+
+          return {
+            model,
+            provider: providerName,
+            content,
+            timestamp: Date.now(),
+          }
+        })
+      )
+      currentResponses = refinedResponses
     }
   }
 
   // Synthesis
-  const synthesisPrompt = buildSynthesisPrompt(question, responses, analysis, round)
-  const consensus = await anthropic.chat(
+  const synthesisPrompt = buildSynthesisPrompt(question, currentResponses, analysis, round)
+  const consensus = await orchestrator.chat(
     [{ role: 'user', content: synthesisPrompt }],
-    'claude-3-5-sonnet-20241022'
+    orchestratorModel as any
   )
 
   if (consensusOnly) {
-    return { consensus, rounds: round }
+    return { consensus, rounds: round, providers: availableProviders }
   }
 
   return {
     consensus,
     rounds: round,
-    modelResponses: responses.map((r) => ({ model: r.model, content: r.content })),
+    modelResponses: currentResponses.map((r) => ({ model: r.model, content: r.content })),
     analysis,
+    providers: availableProviders,
   }
 }
