@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.quantulabs/hivemind",
-  "description": "Multi-model AI consensus MCP server that queries GPT-5.2, Claude, and Gemini simultaneously for synthesized responses.",
+  "description": "Query multiple AI models (OpenAI, Anthropic, Google) for consensus responses.",
   "repository": {
     "url": "https://github.com/QuantuLabs/Hivemind",
     "source": "github"
