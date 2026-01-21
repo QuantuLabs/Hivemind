@@ -11,7 +11,7 @@
   },
   "homepage": "https://github.com/QuantuLabs/Hivemind#readme",
   "keywords": ["mcp", "ai", "hivemind", "consensus", "openai", "anthropic", "gemini", "claude-code"],
-  "files": ["dist"],
+  "files": ["dist", ".env.example"],
   "publishConfig": {
     "access": "public"
   },
