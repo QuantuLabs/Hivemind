@@ -15,62 +15,55 @@ Interactive configuration for the Hivemind multi-model consensus system.
 
 First, call the `check_status` tool to understand the current configuration state.
 
-Parse the response to determine:
-- Which API keys are configured and their source (env = system env var, dotenv = ~/.config/hivemind/.env)
-- Current settings (grounding, Claude Code mode)
-- Active providers
-- Path to the .env file for manual editing
-
 ## Step 2: Show Status Summary
 
-Display the current status to the user in a clear format:
+Display the current status to the user:
 
 ```
 ## Hivemind Configuration Status
 
 ### API Keys
-- OpenAI: [Configured via env / Configured via .env file / Not configured]
-- Anthropic: [Configured via env / Configured via .env file / Not configured]
-- Google: [Configured via env / Configured via .env file / Not configured]
+| Provider | Status | Source |
+|----------|--------|--------|
+| OpenAI | [✅ Configured / ❌ Not configured] | [env / .env file / -] |
+| Google | [✅ Configured / ❌ Not configured] | [env / .env file / -] |
+| Anthropic | [✅ Configured / ❌ Not configured] | [skipped in Claude Code] |
 
 ### Settings
 - Grounding Search: [Enabled/Disabled]
 - Claude Code Mode: [Enabled/Disabled]
 
 ### Config File
-~/.config/hivemind/.env (you can edit this file directly)
-
-### Active Providers
-[List of currently active providers]
+~/.config/hivemind/.env
 ```
 
 ## Step 3: Present Main Menu
 
-Use AskUserQuestion to present the main menu:
+Use AskUserQuestion:
 
 ```json
 {
   "questions": [
     {
-      "question": "What would you like to configure?",
+      "question": "What would you like to do?",
       "header": "Action",
       "multiSelect": false,
       "options": [
         {
-          "label": "API Keys",
-          "description": "Configure OpenAI, Anthropic, or Google API keys"
+          "label": "Add API Keys",
+          "description": "Paste your OpenAI or Google API keys"
         },
         {
-          "label": "Settings",
+          "label": "Edit .env File",
+          "description": "Show path to manually edit the config file"
+        },
+        {
+          "label": "Change Settings",
           "description": "Toggle grounding search or Claude Code mode"
         },
         {
-          "label": "View Status Only",
-          "description": "Just show current configuration"
-        },
-        {
           "label": "Setup Guide",
-          "description": "Step-by-step first-time setup instructions"
+          "description": "First-time setup instructions"
         }
       ]
     }
@@ -80,29 +73,49 @@ Use AskUserQuestion to present the main menu:
 
 ## Step 4: Handle User Selection
 
-### If "API Keys" Selected
+### If "Add API Keys" Selected
 
-Use AskUserQuestion to ask about configuration method:
+Use AskUserQuestion to select providers:
 
 ```json
 {
   "questions": [
     {
-      "question": "How would you like to configure API keys?",
-      "header": "Method",
+      "question": "Which API keys do you want to add? (In Claude Code, you only need OpenAI and/or Google)",
+      "header": "Providers",
+      "multiSelect": true,
+      "options": [
+        {
+          "label": "OpenAI (Recommended)",
+          "description": "GPT-5.2 - get key at platform.openai.com/api-keys"
+        },
+        {
+          "label": "Google (Recommended)",
+          "description": "Gemini 3 Pro - get key at aistudio.google.com/apikey"
+        },
+        {
+          "label": "Anthropic (Optional)",
+          "description": "Only needed outside Claude Code"
+        }
+      ]
+    }
+  ]
+}
+```
+
+For each selected provider, ask the user to paste their key using AskUserQuestion with "Other" option:
+
+```json
+{
+  "questions": [
+    {
+      "question": "Paste your [Provider] API key:",
+      "header": "[Provider]",
       "multiSelect": false,
       "options": [
         {
-          "label": "Environment Variables (Recommended)",
-          "description": "Set OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY in your shell"
-        },
-        {
-          "label": "Manual Entry",
-          "description": "Enter API keys directly (stored in ~/.config/hivemind/.env)"
-        },
-        {
-          "label": "Edit .env File",
-          "description": "Open the .env file path to edit manually"
+          "label": "I'll paste it",
+          "description": "Select this and type/paste your key in the text field"
         }
       ]
     }
@@ -110,104 +123,57 @@ Use AskUserQuestion to ask about configuration method:
 }
 ```
 
-#### If "Environment Variables" Selected
-
-Display instructions:
+The user will select "Other" and paste their key. Then call `configure_keys` with the provided key(s):
 
 ```
-## Configuring API Keys via Environment Variables (Recommended)
-
-Add these lines to your shell profile (~/.zshrc or ~/.bashrc):
-
-export OPENAI_API_KEY="sk-..."
-export ANTHROPIC_API_KEY="sk-ant-..."
-export GOOGLE_API_KEY="AIza..."
-
-After adding:
-1. Run `source ~/.zshrc` (or restart your terminal)
-2. Restart Claude Code for changes to take effect
-3. Run `/hive-config` again to verify
-
-**Why environment variables?**
-- Keys are not exposed in the terminal
-- Easy to manage across projects
-- Standard practice for API credentials
-- Works automatically with Claude Code
+configure_keys({ openai: "sk-...", google: "AIza..." })
 ```
 
-#### If "Manual Entry" Selected
-
-Use AskUserQuestion to select which provider:
-
-```json
-{
-  "questions": [
-    {
-      "question": "Which provider's API key do you want to configure?",
-      "header": "Provider",
-      "multiSelect": true,
-      "options": [
-        {
-          "label": "OpenAI",
-          "description": "GPT models - get key at platform.openai.com"
-        },
-        {
-          "label": "Anthropic",
-          "description": "Claude models - get key at console.anthropic.com"
-        },
-        {
-          "label": "Google",
-          "description": "Gemini models - get key at aistudio.google.com"
-        }
-      ]
-    }
-  ]
-}
+After saving, confirm:
+```
+✅ API keys saved to ~/.config/hivemind/.env
 ```
 
-For each selected provider, ask the user to provide their key. Then call `configure_keys` with the provided key(s).
+### If "Edit .env File" Selected
 
-**Note:** Keys entered manually are stored in `~/.config/hivemind/.env`. The key will be visible in the terminal during entry.
-
-#### If "Edit .env File" Selected
-
-Display the path to the .env file:
+Display:
 
 ```
-## Edit API Keys Directly
+## Manual Configuration
 
-You can edit your API keys directly in the .env file:
+Edit the file directly:
 
 ~/.config/hivemind/.env
 
-Add or modify these lines:
+Add your keys:
 
 OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=AIza...
 
-The file will be created automatically if it doesn't exist when you add a key via "Manual Entry".
+(Anthropic key optional in Claude Code)
+
+After editing, restart Claude Code or run /hive-config to verify.
 ```
 
-### If "Settings" Selected
+### If "Change Settings" Selected
 
-Use AskUserQuestion to select which settings to toggle:
+Use AskUserQuestion:
 
 ```json
 {
   "questions": [
     {
-      "question": "Which settings would you like to change?",
-      "header": "Settings",
-      "multiSelect": true,
+      "question": "Which setting do you want to change?",
+      "header": "Setting",
+      "multiSelect": false,
       "options": [
         {
           "label": "Grounding Search",
-          "description": "Google Search grounding for real-time web data in Gemini responses"
+          "description": "Currently [Enabled/Disabled] - Google Search for real-time data"
         },
         {
           "label": "Claude Code Mode",
-          "description": "Skip Anthropic API when running inside Claude Code (saves costs)"
+          "description": "Currently [Enabled/Disabled] - Skip Anthropic API"
         }
       ]
     }
@@ -215,79 +181,45 @@ Use AskUserQuestion to select which settings to toggle:
 }
 ```
 
-For each selected setting, ask whether to enable or disable, then call `configure_hive` with the new values.
+Then ask to enable/disable and call `configure_hive`.
 
 ### If "Setup Guide" Selected
 
-Display step-by-step first-time setup instructions:
+Display:
 
 ```
-## Hivemind First-Time Setup Guide
+## Hivemind Setup Guide
 
-Hivemind queries multiple AI models to reach consensus. Here's how to set it up:
+### What you need
+- OpenAI key: https://platform.openai.com/api-keys
+- Google key: https://aistudio.google.com/apikey
+- (No Anthropic key needed - Claude is already here!)
 
-### Step 1: Get API Keys
+### Option 1: Paste keys now
+Run `/hive-config` > "Add API Keys" > paste your keys
 
-You need at least one API key (all three recommended):
+### Option 2: Edit .env file
+Create ~/.config/hivemind/.env:
 
-1. **OpenAI** (GPT-5.2)
-   - Go to: https://platform.openai.com/api-keys
-   - Create a new API key
-   - Key format: sk-...
+OPENAI_API_KEY=sk-...
+GOOGLE_API_KEY=AIza...
 
-2. **Anthropic** (Claude Opus 4.5)
-   - Go to: https://console.anthropic.com/settings/keys
-   - Create a new API key
-   - Key format: sk-ant-...
+### Verify
+Run `/hive-config` to check status
 
-3. **Google** (Gemini 3 Pro)
-   - Go to: https://aistudio.google.com/apikey
-   - Create a new API key
-   - Key format: AIza...
-
-### Step 2: Configure Keys
-
-**Option A: Environment Variables (Recommended)**
-
-Add to your shell profile (~/.zshrc or ~/.bashrc):
-
-export OPENAI_API_KEY="your-key-here"
-export ANTHROPIC_API_KEY="your-key-here"
-export GOOGLE_API_KEY="your-key-here"
-
-Then restart your terminal and Claude Code.
-
-**Option B: Manual Configuration**
-
-Run `/hive-config` and select "API Keys" > "Manual Entry"
-
-### Step 3: Verify Setup
-
-Run `/hive-config` to see your configuration status.
-
-### Step 4: Use Hivemind
-
-Run `/hive [your question]` to query the multi-model consensus system.
+### Use Hivemind
+/hive "your question here"
 ```
 
 ## Step 5: Confirm Changes
 
-After any configuration changes, call `check_status` again and display the updated status.
+After any changes, call `check_status` and show updated status.
 
-```
-## Configuration Updated
+## Quick Arguments
 
-[Show updated status summary]
+- `/hive-config status` - Show status only
+- `/hive-config keys` - Go to API key config
+- `/hive-config settings` - Go to settings
+- `/hive-config guide` - Show setup guide
 
-Your changes have been applied. Use `/hive [question]` to query the Hivemind.
-```
-
-## Arguments
-
-- `$ARGUMENTS` - Optional quick actions:
-  - `status` - Show current status only
-  - `keys` - Go directly to API key configuration
-  - `settings` - Go directly to settings configuration
-  - `guide` - Show setup guide
-
-If `$ARGUMENTS` matches one of these, skip the main menu and go directly to that action.
+Check `$ARGUMENTS` and skip to the relevant step if provided.
