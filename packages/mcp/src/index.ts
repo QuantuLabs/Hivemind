@@ -12,7 +12,7 @@ import { getUsageStats, resetSessionStats, formatDuration, formatCost, formatTok
 
 const server = new Server(
   {
-    name: 'hivemind-mcp',
+    name: 'hivemind',
     version: '0.1.0',
   },
   {

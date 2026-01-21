@@ -54,19 +54,21 @@
       },
     },
     "packages/mcp": {
-      "name": "@quantulabs/hivemind-mcp",
+      "name": "@quantulabs/hivemind",
       "version": "0.1.0",
       "bin": {
-        "hivemind-mcp": "./dist/index.js",
+        "hivemind": "./dist/index.js",
       },
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.0.0",
-        "@quantulabs/hivemind-core": "workspace:*",
       },
       "devDependencies": {
+        "@quantulabs/hivemind-core": "workspace:*",
         "@types/node": "^22.10.5",
+        "@vitest/coverage-v8": "^2.1.8",
         "tsup": "^8.3.5",
         "typescript": "^5.7.2",
+        "vitest": "^2.1.8",
       },
     },
   },
@@ -235,9 +237,9 @@
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
-    "@quantulabs/hivemind-core": ["@quantulabs/hivemind-core@workspace:packages/core"],
+    "@quantulabs/hivemind": ["@quantulabs/hivemind@workspace:packages/mcp"],
 
-    "@quantulabs/hivemind-mcp": ["@quantulabs/hivemind-mcp@workspace:packages/mcp"],
+    "@quantulabs/hivemind-core": ["@quantulabs/hivemind-core@workspace:packages/core"],
 
     "@quantulabs/hivemind-web": ["@quantulabs/hivemind-web@workspace:apps/web"],
 

@@ -17,21 +17,48 @@ Multi-model AI consensus platform that queries GPT-5, Claude Opus 4.5, and Gemin
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) >= 1.0
 - API keys for at least one provider:
   - OpenAI API key
-  - Anthropic API key
   - Google AI API key
 
-### Installation
+### Installation (npm)
+
+The simplest way to use Hivemind with Claude Code:
+
+```bash
+# Install globally
+npm install -g @quantulabs/hivemind
+
+# Add to Claude Code
+claude mcp add hivemind -- hivemind
+```
+
+### Configuration
+
+Configure your API keys using one of these methods:
+
+1. **Via Claude Code**: Use the `configure_keys` tool
+2. **Environment variables**: Set `OPENAI_API_KEY` and/or `GOOGLE_API_KEY`
+3. **Config file**: Create `~/.config/hivemind/.env`:
+   ```
+   OPENAI_API_KEY=sk-...
+   GOOGLE_API_KEY=AIza...
+   ```
+
+### Development Installation
+
+For contributing or running from source:
 
 ```bash
 # Clone the repository
 git clone https://github.com/QuantuLabs/hivemind.git
 cd hivemind
 
-# Install dependencies
+# Install dependencies (requires Bun >= 1.0)
 bun install
+
+# Build
+bun run build
 
 # Start development server
 bun dev
@@ -99,7 +126,11 @@ bun lint
 Hivemind includes an MCP server for Claude Code integration:
 
 ```bash
-# Add to Claude Code
+# Install from npm (recommended)
+npm install -g @quantulabs/hivemind
+claude mcp add hivemind -- hivemind
+
+# Or run from local build
 claude mcp add hivemind -- node /path/to/hivemind/packages/mcp/dist/index.js
 ```
 

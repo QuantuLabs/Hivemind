@@ -1,6 +1,37 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
+import { MODELS, DEFAULT_MODELS as CORE_DEFAULT_MODELS, type ModelId, type Provider as CoreProvider } from '@quantulabs/hivemind-core'
+
+// Use Provider type from core (same definition)
+export type Provider = CoreProvider
+
+// Re-export DEFAULT_MODELS from core
+export const DEFAULT_MODELS = CORE_DEFAULT_MODELS
+
+// Valid models per provider (derived from MODELS)
+export const VALID_MODELS: Record<Provider, ModelId[]> = {
+  openai: MODELS.filter(m => m.provider === 'openai').map(m => m.id),
+  anthropic: MODELS.filter(m => m.provider === 'anthropic').map(m => m.id),
+  google: MODELS.filter(m => m.provider === 'google').map(m => m.id),
+}
+
+// Validate model ID for a provider
+export function validateModelId(provider: Provider, modelId: string | undefined): { valid: boolean; error?: string } {
+  if (!modelId) {
+    return { valid: false, error: `No model specified for ${provider}` }
+  }
+
+  const validModels = VALID_MODELS[provider]
+  if (!validModels.includes(modelId as ModelId)) {
+    return {
+      valid: false,
+      error: `Invalid model "${modelId}" for ${provider}. Valid models: ${validModels.join(', ')}`
+    }
+  }
+
+  return { valid: true }
+}
 
 // Standard environment variable names for API keys
 const ENV_VAR_NAMES = {
@@ -25,7 +56,6 @@ export interface HivemindConfig {
 
 // Key source types for transparency
 export type KeySource = 'env' | 'dotenv' | 'none'
-export type Provider = 'openai' | 'anthropic' | 'google'
 
 export interface KeySourceInfo {
   provider: Provider
@@ -120,6 +150,9 @@ function getEnvFileKeys(): Record<string, string> {
   return {}
 }
 
+// Get the set of managed env var names
+const MANAGED_ENV_VARS = new Set(Object.values(ENV_VAR_NAMES))
+
 function saveEnvFile(keys: Record<string, string>): void {
   if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 })
@@ -156,11 +189,14 @@ function saveEnvFile(keys: Record<string, string>): void {
 
       const key = trimmed.slice(0, eqIndex).trim()
       if (key in keys) {
+        // Update the key with new value
         lines.push(`${key}=${keys[key]}`)
         writtenKeys.add(key)
-      } else {
+      } else if (!MANAGED_ENV_VARS.has(key)) {
+        // Preserve non-managed keys (user's own env vars)
         lines.push(line)
       }
+      // Managed keys not in 'keys' are deleted (skipped)
     }
   }
 
