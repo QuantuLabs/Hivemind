@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.quantulabs/hivemind",
+  "description": "Multi-model AI consensus MCP server that queries GPT-5.2, Claude, and Gemini simultaneously for synthesized responses.",
+  "repository": {
+    "url": "https://github.com/QuantuLabs/Hivemind",
+    "source": "github"
+  },
+  "version": "0.1.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@quantulabs/hivemind",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "OpenAI API key for GPT-5.2",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true,
+          "name": "OPENAI_API_KEY"
+        },
+        {
+          "description": "Google AI API key for Gemini",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true,
+          "name": "GOOGLE_API_KEY"
+        }
+      ]
+    }
+  ]
+}

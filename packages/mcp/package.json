@@ -1,6 +1,7 @@
 {
   "name": "@quantulabs/hivemind",
-  "version": "0.1.1",
+  "version": "0.1.2",
+  "mcpName": "io.github.quantulabs/hivemind",
   "description": "MCP server for Hivemind - Multi-model AI consensus for Claude Code",
   "license": "MIT",
   "author": "QuantuLabs",
