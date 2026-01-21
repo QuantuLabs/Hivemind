@@ -20,27 +20,23 @@ claude mcp add hivemind -- hivemind
 
 ### Configuration
 
-**Option 1: Interactive setup (recommended)**
+You need API keys from [OpenAI](https://platform.openai.com/api-keys) and/or [Google AI](https://aistudio.google.com/apikey).
+
+**Option 1: Interactive (recommended)**
 ```bash
 /hive-config
 ```
-Follow the prompts to paste your API keys.
+Select "API Keys" > "Manual Entry" and paste your keys.
 
-**Option 2: Manual .env file**
+**Option 2: Config file**
+
+Create `~/.config/hivemind/.env`:
 ```bash
-# Copy the example file
-mkdir -p ~/.config/hivemind
-cp node_modules/@quantulabs/hivemind/.env.example ~/.config/hivemind/.env
-
-# Edit and add your keys
-nano ~/.config/hivemind/.env
+OPENAI_API_KEY=sk-...
+GOOGLE_API_KEY=AIza...
 ```
 
-**Option 3: Environment variables**
-```bash
-export OPENAI_API_KEY=sk-...
-export GOOGLE_API_KEY=AIza...
-```
+> A `.env.example` template is included in the package.
 
 ### Usage
 
