@@ -11,6 +11,12 @@ Multi-model AI consensus platform that queries GPT-5.2, Claude Opus 4.5, and Gem
 
 Use Hivemind directly in Claude Code to get perspectives from GPT-5.2 and Gemini 3 Pro. Claude acts as the orchestrator and synthesizes the responses.
 
+### Requirements
+
+- [Node.js](https://nodejs.org/) >= 18
+- [Claude Code](https://claude.ai/code) CLI installed
+- At least one API key: [OpenAI](https://platform.openai.com/api-keys) or [Google AI](https://aistudio.google.com/apikey)
+
 > **Note:** No Anthropic API key needed - Claude is already your host!
 
 ### Installation
