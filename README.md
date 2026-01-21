@@ -7,9 +7,11 @@ Multi-model AI consensus platform that queries GPT-5.2, Claude Opus 4.5, and Gem
 
 ---
 
-## MCP Server (Claude Code / CLI)
+## MCP Server for Claude Code
 
-Use Hivemind directly in Claude Code or any MCP-compatible client.
+Use Hivemind directly in Claude Code to get perspectives from GPT-5.2 and Gemini 3 Pro. Claude acts as the orchestrator and synthesizes the responses.
+
+> **Note:** No Anthropic API key needed - Claude is already your host!
 
 ### Installation
 
@@ -20,7 +22,9 @@ claude mcp add hivemind -- hivemind
 
 ### Configuration
 
-You need API keys from [OpenAI](https://platform.openai.com/api-keys) and/or [Google AI](https://aistudio.google.com/apikey).
+You need at least one API key, but both are recommended for better consensus:
+- [OpenAI](https://platform.openai.com/api-keys) (GPT-5.2)
+- [Google AI](https://aistudio.google.com/apikey) (Gemini 3 Pro)
 
 **Option 1: Interactive (recommended)**
 ```bash
@@ -37,6 +41,16 @@ GOOGLE_API_KEY=AIza...
 ```
 
 > A `.env.example` template is included in the package.
+
+<details>
+<summary>Using with other MCP clients (non-Claude Code)</summary>
+
+For standalone MCP usage, you can also add an Anthropic key to include Claude in the consensus:
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+Disable Claude Code mode via `/hive-config` > Settings > Claude Code Mode.
+</details>
 
 ### Usage
 
