@@ -32,11 +32,11 @@ You need at least one API key, but both are recommended for better consensus:
 - [OpenAI](https://platform.openai.com/api-keys) (GPT-5.2)
 - [Google AI](https://aistudio.google.com/apikey) (Gemini 3 Pro)
 
-**Option 1: Interactive (recommended)**
+**Option 1: Paste directly (recommended)**
 ```bash
-/hive-config
+/hive-config sk-proj-xxx...   # OpenAI key
+/hive-config AIzaSy...        # Google key
 ```
-Select "API Keys" > "Manual Entry" and paste your keys.
 
 **Option 2: Config file**
 
