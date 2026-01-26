@@ -29,7 +29,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'hivemind',
         description:
-          'Query GPT-5.2 and Gemini 3 Pro in parallel and get their raw responses. Claude Code acts as the orchestrator - use this tool to gather other model perspectives, then analyze and synthesize the consensus yourself.',
+          'Query multiple AI models (GPT-5.2, Gemini 3 Pro), analyze for consensus through deliberation rounds, and synthesize a final answer. In Claude Code: returns orchestratorNote for Claude to add its perspective. Outside Claude Code: includes all 3 models with full automated synthesis.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -41,17 +41,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'string',
               description: 'Additional context to include (code snippets, file contents, documentation, etc.). This context will be sent to all models.',
             },
-            previousResponses: {
-              type: 'array',
-              description: 'For follow-up queries: include previous model responses so they can reconsider. Each item should have provider and content.',
-              items: {
-                type: 'object',
-                properties: {
-                  provider: { type: 'string', description: 'Provider name (openai, google, claude)' },
-                  content: { type: 'string', description: 'The previous response content' },
-                },
-                required: ['provider', 'content'],
-              },
+            maxRounds: {
+              type: 'number',
+              description: 'Maximum deliberation rounds for reaching consensus (default: 3)',
+              default: 3,
             },
           },
           required: ['question'],
@@ -99,6 +92,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             claudeCodeMode: {
               type: 'boolean',
               description: 'Skip Anthropic API calls when running inside Claude Code (default: true). When enabled, only OpenAI and Google are queried since Claude is already the host.',
+            },
+            models: {
+              type: 'object',
+              description: 'Configure which model to use for each provider',
+              properties: {
+                openai: {
+                  type: 'string',
+                  description: 'OpenAI model ID (e.g., gpt-5.2, gpt-5.1, gpt-5-mini, o4-mini)',
+                },
+                anthropic: {
+                  type: 'string',
+                  description: 'Anthropic model ID (e.g., claude-opus-4-5-20251101, claude-sonnet-4-5-20250514)',
+                },
+                google: {
+                  type: 'string',
+                  description: 'Google model ID (e.g., gemini-3-pro-preview, gemini-3-flash-preview, gemini-2.5-pro)',
+                },
+              },
             },
           },
         },
@@ -225,8 +236,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case 'configure_hive': {
-      const settings = args as { useGrounding?: boolean; claudeCodeMode?: boolean }
-      const updated = updateSettings(settings)
+      const { models, ...otherSettings } = args as {
+        useGrounding?: boolean
+        claudeCodeMode?: boolean
+        models?: { openai?: string; anthropic?: string; google?: string }
+      }
+
+      // Merge models if provided
+      const settingsToUpdate: Partial<typeof otherSettings & { models?: Record<string, string> }> = { ...otherSettings }
+      if (models) {
+        const currentSettings = getSettings()
+        settingsToUpdate.models = { ...currentSettings.models, ...models }
+      }
+
+      const updated = updateSettings(settingsToUpdate)
 
       return {
         content: [

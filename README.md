@@ -44,6 +44,10 @@ Create `~/.config/hivemind/.env`:
 ```bash
 OPENAI_API_KEY=sk-...
 GOOGLE_API_KEY=AIza...
+
+# Optional: Override default models
+OPENAI_MODEL=gpt-5.1
+GOOGLE_MODEL=gemini-2.5-flash
 ```
 
 > A `.env.example` template is included in the package.

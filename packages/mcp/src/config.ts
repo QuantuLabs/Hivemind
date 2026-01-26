@@ -40,9 +40,17 @@ const ENV_VAR_NAMES = {
   google: 'GOOGLE_API_KEY',
 } as const
 
+// Environment variable names for model selection
+const MODEL_ENV_VAR_NAMES = {
+  openai: 'OPENAI_MODEL',
+  anthropic: 'ANTHROPIC_MODEL',
+  google: 'GOOGLE_MODEL',
+} as const
+
 export interface HivemindSettings {
   useGrounding: boolean
   claudeCodeMode: boolean // Skip Anthropic API when running inside Claude Code
+  models: Record<Provider, string> // Model ID per provider
 }
 
 export interface HivemindConfig {
@@ -77,6 +85,7 @@ function isRunningInClaudeCode(): boolean {
 const DEFAULT_SETTINGS: HivemindSettings = {
   useGrounding: true,
   claudeCodeMode: true,
+  models: { ...CORE_DEFAULT_MODELS },
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'hivemind')
@@ -88,19 +97,46 @@ interface SettingsConfig {
   settings: HivemindSettings
 }
 
+// Get model from environment variable (system env or .env file)
+function getModelFromEnv(provider: Provider): string | undefined {
+  const envVarName = MODEL_ENV_VAR_NAMES[provider]
+  // 1. Check system environment variable
+  const sysValue = process.env[envVarName]
+  if (sysValue && sysValue.trim().length > 0) {
+    return sysValue.trim()
+  }
+  // 2. Check .env file
+  const envKeys = getEnvFileKeys()
+  const dotenvValue = envKeys[envVarName]
+  if (dotenvValue && dotenvValue.trim().length > 0) {
+    return dotenvValue.trim()
+  }
+  return undefined
+}
+
 function getSettingsConfig(): SettingsConfig {
+  let settings = { ...DEFAULT_SETTINGS }
+
   try {
     if (fs.existsSync(CONFIG_FILE)) {
       const content = fs.readFileSync(CONFIG_FILE, 'utf-8')
       const parsed = JSON.parse(content)
-      return {
-        settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
-      }
+      settings = { ...DEFAULT_SETTINGS, ...parsed.settings }
     }
   } catch {
-    // Ignore errors, return defaults
+    // Ignore errors, use defaults
   }
-  return { settings: DEFAULT_SETTINGS }
+
+  // Override models from env vars (highest priority)
+  const providers: Provider[] = ['openai', 'anthropic', 'google']
+  for (const provider of providers) {
+    const modelFromEnv = getModelFromEnv(provider)
+    if (modelFromEnv) {
+      settings.models[provider] = modelFromEnv
+    }
+  }
+
+  return { settings }
 }
 
 function saveSettingsConfig(config: SettingsConfig): void {
