@@ -29,22 +29,36 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'hivemind',
         description:
-          'Query multiple AI models (GPT-5.2, Gemini 3 Pro), analyze for consensus through deliberation rounds, and synthesize a final answer. In Claude Code: returns orchestratorNote for Claude to add its perspective. Outside Claude Code: includes all 3 models with full automated synthesis.',
+          'Query multiple AI models (GPT-5.2, Gemini 3 Pro) and return their raw responses. The orchestrator analyzes responses, decides if consensus exists, formulates targeted follow-up questions if needed, and synthesizes the final answer.',
         inputSchema: {
           type: 'object',
           properties: {
             question: {
               type: 'string',
-              description: 'The question to ask the AI models',
+              description: 'The question to ask all AI models (used when queries is not specified)',
             },
             context: {
               type: 'string',
-              description: 'Additional context to include (code snippets, file contents, documentation, etc.). This context will be sent to all models.',
+              description: 'Shared context for all models (code, files, documentation, etc.)',
             },
-            maxRounds: {
-              type: 'number',
-              description: 'Maximum deliberation rounds for reaching consensus (default: 3)',
-              default: 3,
+            queries: {
+              type: 'array',
+              description: 'For targeted rounds: send different questions to each model based on their previous responses and identified divergences',
+              items: {
+                type: 'object',
+                properties: {
+                  provider: {
+                    type: 'string',
+                    enum: ['openai', 'google', 'anthropic'],
+                    description: 'Which model to query',
+                  },
+                  question: {
+                    type: 'string',
+                    description: 'The specific question for this model',
+                  },
+                },
+                required: ['provider', 'question'],
+              },
             },
           },
           required: ['question'],
